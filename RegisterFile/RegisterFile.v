@@ -6,7 +6,7 @@
 //
 //
 // Student(s) Name and Last Name: FILL IN YOUR INFO HERE!
-//
+//John Rottinghaus, Joshua Dokken, Dylan Correa
 //
 // Module - register_file.v
 // Description - Implements a register file with 32 32-Bit wide registers.
@@ -51,5 +51,27 @@
 module RegisterFile(ReadRegister1, ReadRegister2, WriteRegister, WriteData, RegWrite, Clk, ReadData1, ReadData2);
 
 	/* Please fill in the implementation here... */
+	input Clk, RegWrite;
+	input [4:0] ReadRegister1, ReadRegister2, WriteRegister;
+	input [31:0] WriteData;
+
+	
+	output reg [31:0] ReadData1, ReadData2;
+	
+	always @(posedge Clk) begin
+	
+	   if(RegWrite) begin
+	   
+	   end
+    end
+    
+    always @(*) begin
+        
+        
+    end
+	
+	
+	
+	
 
 endmodule
