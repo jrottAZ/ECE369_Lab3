@@ -782,4 +782,54 @@ vbsme:
     li      $v1, 0
 
     # insert your code here
-   
+ 
+.globl traverseArray
+traverseArray:
+	
+	
+	li $t0, 0         	#t0 is x
+	li $t1, 0         	#t1 is y
+
+	li $t2, 0         	#t2 is direction of movement
+
+	addi $t3, $a3, -1 	#finding windowX - 1
+   	addi $t4, $a4, -1 	#finding windowY - 1
+	
+	sub $t5, $a1, $t3	#find xMax
+	sub $t6, $a2, $t4	#find yMax
+	
+
+	li $t3, 0         #t3 is bestX
+	li $t4, 0         #t4 is bestY
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
