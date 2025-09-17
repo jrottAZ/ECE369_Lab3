@@ -799,9 +799,22 @@ traverseArray:
 	sub $t6, $a2, $t4	#find yMax
 	
 
-	li $t3, 0         #t3 is bestX
-	li $t4, 0         #t4 is bestY
+	li $t3, 0         	#t3 is bestX
+	li $t4, 0         	#t4 is bestY
+	
+	li $t7, 0               #t7 is i
+	mul $t8, $t5, $t6	#max index of i for loop
 
+taloop1:
+	bne $t7, $t8, exit      #NOTE: FIX EXIT TO NEXT PART WHEN WE GET THERE
+	
+	bne $t2, $zero, UP	#Choose direction branch
+
+UP:
+	bne	
+	addi $t1, $t1, 1	#add to the y coordinate
+
+	
 	
 
 
