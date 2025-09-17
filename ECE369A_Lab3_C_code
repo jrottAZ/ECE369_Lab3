@@ -1,0 +1,73 @@
+#include <stdio.h>
+
+function vbsme(int fileX, int fileY, int windowX, int windowY){
+    //NOTE: we will need to add +1 if we want it in coordinates starting at (1, 1)
+    //fileX is the x dimension of the whole grid
+
+    //fileY is the y dimension of the whole grid
+
+    //windowX is the x dimension of the window
+
+    //windowY is the y dimension of the window
+
+    // x is the top left x of window and same with y, dir is the direction (up/down the diagonal is going)
+    int x = 0;
+    int y = 0;
+    int dir = 0;
+
+    int bestX = 0;
+    int bestY = 0;
+
+    //max that x and y can do foe window to not leave the bounds
+    int xMax = fileX - windowX;
+    int yMax = fileY - windowY;
+
+    for(int i = 0; i < xMax * yMax; i++){
+
+        //if we are moving up and right
+        if(dir = 1){
+
+            //check that we dont hit right boundary
+            if(x == xMax - 1){
+                y++;
+                dir = 0;
+            }
+            //check that we dont hit top boundary
+            else if(y == 0){
+                x++;
+                dir = 0;
+            }
+            //if no boundaries hit, go up and right
+            else{
+                x++;
+                y--;
+            }
+        }
+        else{
+
+            //check that we dont hit right boundary
+            if(x == 0){
+                y++;
+                dir = 1;
+            }
+            //check that we dont hit top boundary
+            else if(y == yMax - 1){
+                x++;
+                dir = 1;
+            }
+            //if no boundaries hit, down up and left
+            else{
+                x--;
+                y++;
+            }
+        }
+        i++;
+    }
+
+
+
+
+
+    
+
+}
