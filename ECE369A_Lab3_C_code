@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <iostream>
+#include <vector>
+using namespace std;
 
-function vbsme(int fileX, int fileY, int windowX, int windowY){
+
+void vbsme(vector<vector<int>> arr,int fileX, int fileY, int windowX, int windowY){
     //NOTE: we will need to add +1 if we want it in coordinates starting at (1, 1)
     //fileX is the x dimension of the whole grid
 
@@ -19,21 +23,21 @@ function vbsme(int fileX, int fileY, int windowX, int windowY){
     int bestY = 0;
 
     //max that x and y can do foe window to not leave the bounds
-    int xMax = fileX - windowX;
-    int yMax = fileY - windowY;
-
+    int xMax = fileX - (windowX - 1);
+    int yMax = fileY - (windowY - 1);
+    cout << xMax * yMax << endl;
     for(int i = 0; i < xMax * yMax; i++){
-
+        cout << arr[x][y] << " " << i << endl;
         //if we are moving up and right
-        if(dir = 1){
+        if(dir == 1){
 
             //check that we dont hit right boundary
-            if(x == xMax - 1){
+            if((x == xMax - 1) && (y != yMax - 1)){
                 y++;
                 dir = 0;
             }
             //check that we dont hit top boundary
-            else if(y == 0){
+            else if((y == 0) && (x != xMax - 1)){
                 x++;
                 dir = 0;
             }
@@ -46,12 +50,12 @@ function vbsme(int fileX, int fileY, int windowX, int windowY){
         else{
 
             //check that we dont hit right boundary
-            if(x == 0){
+            if((x == 0) && (y != yMax - 1)){
                 y++;
                 dir = 1;
             }
             //check that we dont hit top boundary
-            else if(y == yMax - 1){
+            else if((y == yMax - 1) && (x != xMax - 1)){
                 x++;
                 dir = 1;
             }
@@ -61,13 +65,21 @@ function vbsme(int fileX, int fileY, int windowX, int windowY){
                 y++;
             }
         }
-        i++;
     }
-
-
-
-
-
     
 
+}
+
+
+int main() {
+     vector<vector<int>> array = {
+        {1,  2,  6,  7,  15},
+        {3,  5,  8,  14,  16},
+        {4, 9, 13, 17, 22},
+        {10, 12, 18, 21, 23},
+        {11, 19, 20, 24, 25}
+    };
+
+    vbsme(array, 5, 5, 2, 2);
+    return 0;
 }
