@@ -83,3 +83,52 @@ int main() {
     vbsme(array, 5, 5, 2, 2);
     return 0;
 }
+
+////////////////////////////////Option 2////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void vbsme(const vector<vector<int>>& arr, int fileX, int fileY, int windowX, int windowY) {
+    int xMax = fileX - windowX + 1;
+    int yMax = fileY - windowY + 1;
+
+    int maxTier = xMax + yMax - 2; // max Manhattan distance from (0,0)
+
+    cout << "Total valid positions: " << xMax * yMax << endl;
+
+    for (int tier = 0; tier <= maxTier; tier++) {
+        if (tier % 2 == 0) {
+            // Even tier: traverse from bottom to top
+            for (int r = tier; r >= 0; r--) {
+                int c = tier - r;
+                if (r < xMax && c < yMax) {
+                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
+                }
+            }
+        } else {
+            // Odd tier: traverse from top to bottom
+            for (int r = 0; r <= tier; r++) {
+                int c = tier - r;
+                if (r < xMax && c < yMax) {
+                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
+                }
+            }
+        }
+    }
+}
+int main() {
+    vector<vector<int>> array = {
+        {1,  2,  6,  7,  15},
+        {3,  5,  8, 14,  16},
+        {4,  9, 13, 17,  22},
+        {10, 12, 18, 21, 23},
+        {11, 19, 20, 24, 25}
+    };
+
+    vbsme(array, 5, 5, 2, 2);  // Try with a 3x3 window
+    return 0;
+}
+
+
