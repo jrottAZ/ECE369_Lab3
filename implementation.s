@@ -9,8 +9,8 @@ fileY: .word 5
 #arr = $a0
 #fileX = $s1
 #fileY = $s2
-#windowX = $s3
-#windowY = $s4
+#windowY = $s3
+#windowX = $s4
 
 
 # data for printing
@@ -24,12 +24,12 @@ Main:
 	lw $s1, fileX
 	lw $s2, fileY
 	li $s3, 2
-	li $s4, 2
+	li $s4, 1
 VBSME:
 	#initialization
 	add $t0, $t0, $0 #x = 0
 	add $t1, $t1, $0 #y = 0
-	add $t2, $0, $0 #dir = 0
+	addi $t2, $0, 1 #dir = 1
 	
 	#finding xMax and yMax
 	#xMax = $t3
@@ -116,6 +116,7 @@ loop:
 		checktop:
 		#else if((y == yMax - 1) && (x != xMax - 1))
 		bne $t1, $t8, nonehit
+		beq $t0, $t7, nonehit
 		addi $t0, $t0, 1
 		addi $t2, $t2, 1
 		addi $t5, $t5, 1
