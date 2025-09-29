@@ -145,6 +145,6 @@ int SAD(int x, int y, int xwind, int ywind, const vector<vector<int>>& windArr, 
             }
         }
     }
-    return sum
+    return sum;
 
 }

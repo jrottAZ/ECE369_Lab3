@@ -5,7 +5,8 @@ arr:	.word 1,  2,  6,  7,  15,
          10, 12, 18, 21, 23,
          11, 19, 20, 24, 25
 fileX: .word 5
-fileY: .word 5        
+fileY: .word 5 
+window: .word 5, 8       
 #arr = $a0
 #fileX = $s1
 #fileY = $s2
@@ -23,8 +24,9 @@ Main:
 	la $s0, arr
 	lw $s1, fileX
 	lw $s2, fileY
-	li $s3, 2
-	li $s4, 1
+	li $s3, 1
+	li $s4, 2
+	lw $s5, window
 VBSME:
 	#initialization
 	add $t0, $t0, $0 #x = 0
@@ -158,5 +160,38 @@ print:
 
     jr $ra
 
-		
+
+SAD:
+#filex is a0, filey is a1, windowx is s2, windowy is s3, y is s0, x is s1, arr is a3, window is a2
+    addi $s6, $0, $0 #sum
+    
+    add $t5, $0, $0 #i
+    #outer loop
+    outLoop:
+    	add $t6, $0, $0 #j
+    	#inner loop
+    	inLoop:
+    	    #get the index for both the window and the grid
+    	    add $t1, $s0, $t5  #gets y + i
+    	    add $t2, $s1, $t6  #gets x + j
+    	    mul $t9, $t1, $a0    # t9 = y new* fileX
+	    add $t9, $t9, $t2    # + x new
+	    sll $t9, $t9, 2      # *4 (bytes per word)
+	    add $t9, $a3, $t9    # base + offset
+	    lw  $t9, 0($t9)      # load arr[y+i][x+j]
+	    
+	    mul $t8, $t5, $s2    # t8 = i * windowX
+	    add $t8, $t9, $t6    # + j
+	    sll $t8, $t9, 2      # *4 (bytes per word)
+	    add $t8, $a2, $t9    # base + offset
+	    lw  $t8, 0($t8)      # load window[i][j]
+	    
+	    
+    
+    
+    
+    
+    
+    
+    		
 	
