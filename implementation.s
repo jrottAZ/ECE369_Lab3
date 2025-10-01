@@ -159,14 +159,3 @@ print:
     syscall
 
     jr $ra
-
-
-	    
-    
-    
-    
-    
-    
-    
-    		
-	
