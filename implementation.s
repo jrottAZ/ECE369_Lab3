@@ -1,9 +1,9 @@
 .data 
 arr:	.word 1,  2,  6,  7,  15,
-         3,  5,  8,  14,  16,
-         4, 9, 13, 17, 22,
-         10, 12, 18, 21, 23,
-         11, 19, 20, 24, 25
+        .word 3,  5,  8,  14,  16,
+        .word 4, 9, 13, 17, 22,
+        .word 10, 12, 18, 21, 23,
+        .word 11, 19, 20, 24, 25
 fileX: .word 5
 fileY: .word 5 
 window: .word 5, 8       
@@ -29,27 +29,27 @@ Main:
 	lw $s5, window
 VBSME:
 	#initialization
-	add $t0, $t0, $0 #x = 0
-	add $t1, $t1, $0 #y = 0
-	addi $t2, $0, 1 #dir = 1
+	add $t0, $t0, $zero #x = 0
+	add $t1, $t1, $zero #y = 0
+	addi $t2, $zero, 1 #dir = 1
 	
 	#finding xMax and yMax
 	#xMax = $t3
 	#yMax = $t4
-	subi $t3, $s3, 1
+	addi $t3, $s3, -1
 	sub $t3, $s1, $t3
 	
-	subi $t4, $s4, 1
+	addi $t4, $s4, -1
 	sub $t4, $s2, $t4
 	
 	#get xMax-1 and yMax-1 before loop
-	subi $t7, $t3, 1 #get xMax-1
-	subi $t8, $t4, 1
+	addi $t7, $t3, -1 #get xMax-1
+	addi $t8, $t4, -1
 	
 	
 	#i = $t5
 	#xMax*yMax = $t6
-	add $t5, $0, $0
+	add $t5, $zero, $zero
 	mul $t6, $t3, $t4
 	j loop
 	
@@ -76,7 +76,7 @@ loop:
 		beq $t1, $t8, notequal
 		
 		addi $t1, $t1, 1
-		add $t2, $0, $0
+		add $t2, $zero, $zero
 		addi $t5, $t5, 1
 		jal print
 		j loop
@@ -84,11 +84,11 @@ loop:
 		
 		notequal:
 		# else if (y == 0 && x != t7)
-		bne $t1, $0, notequalagain
+		bne $t1, $zero, notequalagain
 		beq $t0, $t7, notequalagain
 		
 		addi $t0, $t0, 1
-		add $t2, $0, $0
+		add $t2, $zero, $zero
 		addi $t5, $t5, 1
 		jal print
 		j loop
@@ -161,31 +161,6 @@ print:
     jr $ra
 
 
-SAD:
-#filex is a0, filey is a1, windowx is s2, windowy is s3, y is s0, x is s1, arr is a3, window is a2
-    addi $s6, $0, $0 #sum
-    
-    add $t5, $0, $0 #i
-    #outer loop
-    outLoop:
-    	add $t6, $0, $0 #j
-    	#inner loop
-    	inLoop:
-    	    #get the index for both the window and the grid
-    	    add $t1, $s0, $t5  #gets y + i
-    	    add $t2, $s1, $t6  #gets x + j
-    	    mul $t9, $t1, $a0    # t9 = y new* fileX
-	    add $t9, $t9, $t2    # + x new
-	    sll $t9, $t9, 2      # *4 (bytes per word)
-	    add $t9, $a3, $t9    # base + offset
-	    lw  $t9, 0($t9)      # load arr[y+i][x+j]
-	    
-	    mul $t8, $t5, $s2    # t8 = i * windowX
-	    add $t8, $t9, $t6    # + j
-	    sll $t8, $t9, 2      # *4 (bytes per word)
-	    add $t8, $a2, $t9    # base + offset
-	    lw  $t8, 0($t8)      # load window[i][j]
-	    
 	    
     
     
