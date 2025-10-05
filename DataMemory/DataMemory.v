@@ -49,6 +49,14 @@ module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData);
 //declaration of Memory    
     reg[31:0] Memory[0:1023];
     
+    //initializing
+    integer i;
+    initial begin
+        for (i = 0; i < 1024; i = i + 1) begin
+            Memory[i] = 32'b0;
+        end
+    end
+    
 //Writing to memory    
     always @(posedge Clk) begin
         if(MemWrite)begin
@@ -59,11 +67,11 @@ module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData);
 
 
 //Reading from memory    
-    always @(posedge Clk) begin
+    always @(*) begin
         if(MemRead) begin
-            ReadData <= Memory[Address[11:2]];            
+            ReadData = Memory[Address[11:2]];            
         end else begin
-            ReadData <= 32'b0;
+            ReadData = 32'b0;
         end
     end
     

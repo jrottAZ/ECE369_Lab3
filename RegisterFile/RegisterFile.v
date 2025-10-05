@@ -58,15 +58,18 @@ module RegisterFile(ReadRegister1, ReadRegister2, WriteRegister, WriteData, RegW
 	
 	output reg [31:0] ReadData1, ReadData2;
 	
+	reg [31:0] registers[31:0];
+	
 	always @(posedge Clk) begin
 	
 	   if(RegWrite) begin
-	   
+	   registers[WriteRegister] = WriteData;
 	   end
     end
     
-    always @(*) begin
-        
+    always @(negedge Clk) begin
+        ReadData1 = registers[ReadRegister1];
+        ReadData2 = registers[ReadRegister2];
         
     end
 	

@@ -43,7 +43,42 @@ module RegisterFile_tb();
 	initial begin
 	
     /* Please fill in the implementation here... */
+    //Initialize
+    RegWrite = 0;
+    WriteData = 0;
+    ReadRegister1 =0;
+    ReadRegister2 =0;
+    // --------------------
+    #20;//wait
+    //----------------------
+    //test writing 
+    RegWrite = 1;
+    
+    // write in 8 - 11
+    #10
+    WriteRegister = 8; WriteData = 32'd4; @(posedge Clk);
+    WriteRegister = 9; WriteData = 32'd5; @(posedge Clk);
+    WriteRegister = 10; WriteData = 32'd6; @(posedge Clk);
+    WriteRegister = 11; WriteData = 32'd7; @(posedge Clk);
+    
+    // Stop writing
+    RegWrite = 0;
+    @(posedge Clk);
+    
+    //Test Reading
+    
+    ReadRegister1 = 8; ReadRegister2 = 9; @(negedge Clk);
 	
+	ReadRegister1 = 10; ReadRegister2 = 11; @(negedge Clk);
+
+	//check overwrtiing register 8
+	RegWrite = 1;
+	WriteRegister = 8; WriteData = 32'd69; @(posedge Clk);
+	    ReadRegister1 = 8; ReadRegister2 = 9; @(negedge Clk);
+	RegWrite = 0;
+	
+	
+	#20;
 	end
 
 endmodule
