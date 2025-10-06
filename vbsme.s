@@ -782,135 +782,110 @@ vbsme:
     li      $v1, 0
 
     # insert your code here
-    # Save return address
-    addi    $sp, $sp, -4
-    sw      $ra, 0($sp)
 
-    # Load frame and window dimensions
-    lw      $s1, 0($a0)     # fileX = frame width (columns)
-    lw      $s2, 4($a0)     # fileY = frame height (rows)
-    lw      $s3, 8($a0)     # windowX = window width
-    lw      $s4, 12($a0)    # windowY = window height
+    addi $s0, $zero, $zero	#x
+    addi $s1, $zero, $zero	#y
 
-    # Compute maximum starting indices
-    addi    $t3, $s3, -1
-    sub     $t3, $s1, $t3   # xMax = frame_width - (window_width - 1)
+    lw $s3, 0($a0)		#xGrid
+    lw $s4, 4($a0)   		#yGrid
 
-    addi    $t4, $s4, -1
-    sub     $t4, $s2, $t4   # yMax = frame_height - (window_height - 1)
+    lw $s5, 8($a0)   		#xWindow
+    lw $s6, 12($a0)  		#yWindow
 
-    # Initialize loop variables
-    li      $t1, 0          # y = 0
-    li      $s6, 0x7FFFFFFF # minSAD = large value
-
-outer_loop:
-    bge     $t1, $t4, exit  # if y >= yMax, done
-
-    li      $t0, 0          # x = 0
-inner_loop:
-    bge     $t0, $t3, inner_done # if x >= xMax, break
-
-    # Save x, y in $t0/$t1 and call SAD
-    jal     SAD
-
-    # Update minimum SAD if needed
-    slt     $s7, $s5, $s6    # if current SAD < minSAD
-    beq     $s7, $zero, skipUpdate
-    add     $s6, $s5, $zero   # minSAD = SAD
-    add     $v0, $t0, $zero   # record x
-    add     $v1, $t1, $zero   # record y
-skipUpdate:
-
-    addi    $t0, $t0, 1
-    j       inner_loop
-inner_done:
-
-    addi    $t1, $t1, 1
-    j       outer_loop
-
-# Exit routine
-exit:
-    lw      $ra, 0($sp)
-    addi    $sp, $sp, 4
-    jr      $ra
-
-# ------------------------------------------------------------
-# SAD: sum of absolute differences between window and frame block
-# Optimized to precompute row offsets
-# Inputs:
-#   $t0 = x, $t1 = y
-#   $s1 = frame width, $s2 = frame height
-#   $s3 = window width, $s4 = window height
-#   $a1 = frame base, $a2 = window base
-# Output:
-#   $s5 = SAD sum
-# ------------------------------------------------------------
-SAD:
-    addi    $sp, $sp, -32       # make stack space for temp registers
-    sw      $t0, 28($sp)
-    sw      $t1, 24($sp)
-    sw      $t6, 20($sp)
-    sw      $t7, 16($sp)
-    sw      $t8, 12($sp)
-    sw      $t9, 8($sp)
-    sw      $t4, 4($sp)
-    sw      $t5, 0($sp)
-
-    add     $s5, $zero, $zero   # sum = 0
-
-    li      $t7, 0              # i = 0 (window width)
-
-sadL1:
-    bge     $t7, $s3, sadOutExit
-    li      $t8, 0              # j = 0 (window height)
+    sub $t0, $s3, $s5
+    addi $t0, $t0, 1		#xMax
     
-    # Precompute row offset for frame
-    add     $t9, $t1, $t8       # y + j
-    mul     $t9, $t9, $s1       # (y+j) * frame_width
+    sub $t1, $s4, $s6
+    addi $t1, $t1, 1		#yMax
 
-sadL2:
-    bge     $t8, $s4, sadInExit
+    add $s7, $t1, $t0
+    addi $s7, $s7, -2		#max tier
 
-    # FRAME index = row_offset + x + i
-    add     $t4, $t9, $t0
-    add     $t4, $t4, $t7
-    sll     $t4, $t4, 2
-    add     $t4, $a1, $t4
-    lw      $t4, 0($t4)
+    add $t2, $zero, $zero       #tier = 0
 
-    # WINDOW index = j * window_width + i
-    mul     $t6, $t8, $s3
-    add     $t6, $t6, $t7
-    sll     $t6, $t6, 2
-    add     $t6, $a2, $t6
-    lw      $t5, 0($t6)
+    ########################## ADD IN SAD IMPLEMENTATION HERE ################
+    #set best sad to the output of this one
 
-    # absolute difference
-    sub     $t6, $t4, $t5
-    bltz    $t6, sadNeg
-    j       sadAdd
-sadNeg:
-    sub     $t6, $zero, $t6
-sadAdd:
-    add     $s5, $s5, $t6
+LOOPS:
+    slt $t3, $t2, $s7           #tier < maxtier
+    beq $t3, $zero, END
 
-    addi    $t8, $t8, 1
-    add     $t9, $t9, $s1        # increment row offset for next j
-    j       sadL2
+    andi $t4, $t2, 1            #check if tier is even and jump based on that
+    bne $t4, $zero, DOWN
 
-sadInExit:
-    addi    $t7, $t7, 1
-    j       sadL1
+UP:
+    add $s0, $t2, $zero		#x = tier
+    slt $t6, $zero, $s0
+    beq $t6, $zero, ENDDIRECT
 
-sadOutExit:
-    lw      $t0, 28($sp)
-    lw      $t1, 24($sp)
-    lw      $t6, 20($sp)
-    lw      $t7, 16($sp)
-    lw      $t8, 12($sp)
-    lw      $t9, 8($sp)
-    lw      $t4, 4($sp)
-    lw      $t5, 0($sp)
-    addi    $sp, $sp, 32
 
-    jr      $ra
+UPIN:
+    sub $s1, $t2, $s0		#y = tier - x
+    slt $t6, $s0, $t0
+    beq $t6, $zero, ENDDIRECT
+    slt $t6, $s1, $t1
+    beq $t6, $zero, ENDDIRECT
+
+    ########################## ADD IN SAD IMPLEMENTATION HERE ################
+
+    j ENDDIRECT
+
+DOWN:
+    add $s0, $zero, $zero	#x = 0
+    slt $t6, $t2, $s0
+    beq $t6, $zero, ENDDIRECT
+
+
+DOWNIN:
+    sub $s1, $t2, $s0		#y = tier - x
+    slt $t6, $s0, $t0
+    beq $t6, $zero, ENDDIRECT
+    slt $t6, $s1, $t1
+    beq $t6, $zero, ENDDIRECT
+
+    ########################## ADD IN SAD IMPLEMENTATION HERE ################
+
+    j ENDDIRECT
+
+
+
+ENDDIRECT:
+    addi $t2, $t2, 1
+    j LOOPS
+
+END:
+    j $ra
+
+    
+
+    
+
+    
+
+                  
+
+
+
+
+    
+
+    
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
