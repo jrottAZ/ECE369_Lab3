@@ -783,8 +783,8 @@ vbsme:
 
     # insert your code here
 
-    addi $s0, $zero, $zero	#x
-    addi $s1, $zero, $zero	#y
+    add $s0, $zero, $zero	#x
+    add $s1, $zero, $zero	#y
 
     lw $s3, 0($a0)		#xGrid
     lw $s4, 4($a0)   		#yGrid
