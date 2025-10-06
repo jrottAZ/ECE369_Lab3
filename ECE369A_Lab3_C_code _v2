@@ -1,150 +1,99 @@
-#include <stdio.h>
 #include <iostream>
+#include <algorithm>
 #include <vector>
-using namespace std;
 
+// Define a structure to hold the frame and window dimensions
+struct FrameWindowInfo {
+    int frame_width;
+    int frame_height;
+    int window_width;
+    int window_height;
+};
 
-void vbsme(vector<vector<int>> arr,int fileX, int fileY, int windowX, int windowY){
-    //NOTE: we will need to add +1 if we want it in coordinates starting at (1, 1)
-    //fileX is the x dimension of the whole grid
+/**
+ * @brief Performs a diagonal/zigzag traversal across a 2D frame,
+ * checking every valid top-left window position (x, y).
+ * * @param info A structure containing the frame and window dimensions.
+ */
+void diagonal_zigzag_traversal(const FrameWindowInfo& info) {
+    
+    // Calculate maximum starting indices (xMax and yMax)
+    // These are the loop limits, where the last valid index is Max - 1.
+    int xMax = info.frame_width - info.window_width + 1;
+    int yMax = info.frame_height - info.window_height + 1;
+    
+    if (xMax <= 0 || yMax <= 0) {
+        std::cerr << "Error: Window is larger than the frame. No traversal possible." << std::endl;
+        return;
+    }
 
-    //fileY is the y dimension of the whole grid
+    // The total number of diagonals to traverse is (xMax - 1) + (yMax - 1) + 1.
+    int total_diagonals = xMax + yMax - 1;
 
-    //windowX is the x dimension of the window
-
-    //windowY is the y dimension of the window
-
-    // x is the top left x of window and same with y, dir is the direction (up/down the diagonal is going)
-    int x = 0;
-    int y = 0;
-    int dir = 0;
-
-    int bestX = 0;
-    int bestY = 0;
-
-    //max that x and y can do foe window to not leave the bounds
-    int xMax = fileX - (windowX - 1);
-    int yMax = fileY - (windowY - 1);
-    cout << xMax * yMax << endl;
-    for(int i = 0; i < xMax * yMax; i++){
-        cout << arr[x][y] << " " << i << endl;
-        //if we are moving up and right
-        if(dir == 1){
-
-            //check that we dont hit right boundary
-            if((x == xMax - 1) && (y != yMax - 1)){
-                y++;
-                dir = 0;
+    std::cout << "Starting Diagonal/Zigzag Traversal (Search Area: " 
+              << xMax << "x" << yMax << "):" << std::endl;
+    std::cout << "--------------------------------------" << std::endl;
+    
+    // Outer loop iterates through each diagonal, where 's' is the sum of coordinates (x + y).
+    for (int s = 0; s < total_diagonals; ++s) {
+        
+        // Determine the traversal direction based on the diagonal index 's'.
+        // This alternates the direction to create the zigzag pattern.
+        
+        if (s % 2 != 0) { // Odd sum: UP-RIGHT traversal (y decreases as x increases)
+            
+            // Find the starting x-coordinate for this diagonal.
+            // It's the minimum of 's' (for diagonals starting at 0,yMax-1) and xMax - 1 (for diagonals hitting xMax-1,0).
+            int x_start = std::min(s, xMax - 1);
+            
+            // Inner loop traverses the diagonal by decrementing x.
+            for (int x = x_start; x >= 0; --x) {
+                int y = s - x; // Calculate y: y = s - x
+                
+                // Check bounds: Ensure the calculated y is within the valid search area [0, yMax-1].
+                if (y < yMax && y >= 0) {
+                    // This is the point where SAD calculation would occur.
+                    // For now, we print the top-left corner coordinate (x, y).
+                    std::cout << "Checking position (x, y): (" << x << ", " << y << ") - Up-Right" << std::endl;
+                }
             }
-            //check that we dont hit top boundary
-            else if((y == 0) && (x != xMax - 1)){
-                x++;
-                dir = 0;
-            }
-            //if no boundaries hit, go up and right
-            else{
-                x++;
-                y--;
-            }
-        }
-        else{
-
-            //check that we dont hit right boundary
-            if((x == 0) && (y != yMax - 1)){
-                y++;
-                dir = 1;
-            }
-            //check that we dont hit top boundary
-            else if((y == yMax - 1) && (x != xMax - 1)){
-                x++;
-                dir = 1;
-            }
-            //if no boundaries hit, down up and left
-            else{
-                x--;
-                y++;
+        } else { // Even sum: DOWN-LEFT traversal (x decreases as y increases)
+            
+            // Find the starting y-coordinate for this diagonal.
+            int y_start = std::min(s, yMax - 1);
+            
+            // Inner loop traverses the diagonal by decrementing y.
+            for (int y = y_start; y >= 0; --y) {
+                int x = s - y; // Calculate x: x = s - y
+                
+                // Check bounds: Ensure the calculated x is within the valid search area [0, xMax-1].
+                if (x < xMax && x >= 0) {
+                    // This is the point where SAD calculation would occur.
+                    std::cout << "Checking position (x, y): (" << x << ", " << y << ") - Down-Left" << std::endl;
+                }
             }
         }
     }
     
-
+    std::cout << "--------------------------------------" << std::endl;
+    std::cout << "Traversal complete." << std::endl;
 }
-
 
 int main() {
-     vector<vector<int>> array = {
-        {1,  2,  6,  7,  15},
-        {3,  5,  8,  14,  16},
-        {4, 9, 13, 17, 22},
-        {10, 12, 18, 21, 23},
-        {11, 19, 20, 24, 25}
+    // Example: A typical search area for a block matching algorithm is 8x8 block in a 16x16 frame, 
+    // which results in an 9x9 search space (if search is restricted to the frame).
+    
+    // Let's model a simple 4x4 search space: Frame 5x5, Window 2x2.
+    // xMax = 5 - 2 + 1 = 4. Valid x: 0, 1, 2, 3
+    // yMax = 5 - 2 + 1 = 4. Valid y: 0, 1, 2, 3
+    FrameWindowInfo example = {
+        .frame_width = 5,
+        .frame_height = 5,
+        .window_width = 1,
+        .window_height = 1
     };
 
-    vbsme(array, 5, 5, 2, 2);
+    diagonal_zigzag_traversal(example);
+
     return 0;
-}
-
-////////////////////////////////Option 2////////////////////////////////////////////////////////////////////////
-
-#include <iostream>
-#include <vector>
-using namespace std;
-
-void vbsme(const vector<vector<int>>& arr, int fileX, int fileY, int windowX, int windowY) {
-    int xMax = fileX - windowX + 1;
-    int yMax = fileY - windowY + 1;
-
-    int maxTier = xMax + yMax - 2; // max Manhattan distance from (0,0)
-
-    cout << "Total valid positions: " << xMax * yMax << endl;
-
-    for (int tier = 0; tier <= maxTier; tier++) {
-        if (tier % 2 == 0) {
-            // Even tier: traverse from bottom to top
-            for (int r = tier; r >= 0; r--) {
-                int c = tier - r;
-                if (r < xMax && c < yMax) {
-                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
-                }
-            }
-        } else {
-            // Odd tier: traverse from top to bottom
-            for (int r = 0; r <= tier; r++) {
-                int c = tier - r;
-                if (r < xMax && c < yMax) {
-                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
-                }
-            }
-        }
-    }
-}
-int main() {
-    vector<vector<int>> array = {
-        {1,  2,  6,  7,  15},
-        {3,  5,  8, 14,  16},
-        {4,  9, 13, 17,  22},
-        {10, 12, 18, 21, 23},
-        {11, 19, 20, 24, 25}
-    };
-
-    vbsme(array, 5, 5, 2, 2);  // Try with a 3x3 window
-    return 0;
-}
-
-
-int SAD(int x, int y, int xwind, int ywind, const vector<vector<int>>& windArr, const vector<vector<int>>& gridArr){
-    int sum = 0;
-
-    for(int i = 0; i < xwind; i++){
-        for(int j = 0; j < ywind; j++){
-            if(windArr[y][x] < gridArr[y][x]){
-                sum += gridArr[y][x] - windArr[y][x];
-            }
-            else{
-                sum += windArr[y][x] - gridArr[y][x];
-            }
-        }
-    }
-    return sum;
-
 }
