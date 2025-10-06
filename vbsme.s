@@ -782,206 +782,135 @@ vbsme:
     li      $v1, 0
 
     # insert your code here
+    # Save return address
+    addi    $sp, $sp, -4
+    sw      $ra, 0($sp)
 
-    # initialization
-    addi $sp, $sp, -4     # make space for ra
-    sw   $ra, 0($sp)      # save return address
+    # Load frame and window dimensions
+    lw      $s1, 0($a0)     # fileX = frame width (columns)
+    lw      $s2, 4($a0)     # fileY = frame height (rows)
+    lw      $s3, 8($a0)     # windowX = window width
+    lw      $s4, 12($a0)    # windowY = window height
 
-    add $t0, $zero, $zero       # x = 0
-    add $t1, $zero, $zero       # y = 0
-    li  $t2, 1                  # dir = 1
-    
-    lw   $s1, 0($a0)            # fileX = i (frame rows)
-    lw   $s2, 4($a0)            # fileY = j (frame cols)
-    lw   $s3, 8($a0)            # windowX = k
-    lw   $s4, 12($a0)           # windowY = l
+    # Compute maximum starting indices
+    addi    $t3, $s3, -1
+    sub     $t3, $s1, $t3   # xMax = frame_width - (window_width - 1)
 
-    # calculate xMax = fileX - (windowX - 1)
-    addi $t3, $s3, -1
-    sub  $t3, $s1, $t3      # xMax = fileX - (windowX - 1)
+    addi    $t4, $s4, -1
+    sub     $t4, $s2, $t4   # yMax = frame_height - (window_height - 1)
 
-    # calculate yMax = fileY - (windowY - 1)
-    addi $t4, $s4, -1
-    sub  $t4, $s2, $t4      # yMax = fileY - (windowY - 1)
+    # Initialize loop variables
+    li      $t1, 0          # y = 0
+    li      $s6, 0x7FFFFFFF # minSAD = large value
 
-    # prepare xMax - 1 and yMax - 1 for comparisons
-    addi $t7, $t3, -1       # t7 = xMax - 1
-    addi $t8, $t4, -1       # t8 = yMax - 1
+outer_loop:
+    bge     $t1, $t4, exit  # if y >= yMax, done
 
-    add $t5, $zero, $zero   # loop counter i
-    mul $t6, $t3, $t4       # total iterations = xMax * yMax
+    li      $t0, 0          # x = 0
+inner_loop:
+    bge     $t0, $t3, inner_done # if x >= xMax, break
 
-    jal SAD                 # get initial SAD
-    add $s6, $zero, $s5
-    add $v0, $t0, $zero
-    add $v1, $t1, $zero
+    # Save x, y in $t0/$t1 and call SAD
+    jal     SAD
 
-    j loop
+    # Update minimum SAD if needed
+    slt     $s7, $s5, $s6    # if current SAD < minSAD
+    beq     $s7, $zero, skipUpdate
+    add     $s6, $s5, $zero   # minSAD = SAD
+    add     $v0, $t0, $zero   # record x
+    add     $v1, $t1, $zero   # record y
+skipUpdate:
 
+    addi    $t0, $t0, 1
+    j       inner_loop
+inner_done:
 
-# ----------------------------
-# loop: main traversal loop
-# ----------------------------
-loop:
-    slt $t9, $t0, $t3       # t9 = (x < xMax)
-    beq $t9, $zero, clampX
-    j checkY
+    addi    $t1, $t1, 1
+    j       outer_loop
 
-clampX:
-    addi $t0, $t3, -1   # x = xMax - 1
-
-checkY:
-    slt $t9, $t1, $t4       # t9 = (y < yMax)
-    beq $t9, $zero, clampY
-    j doSAD
-
-clampY:
-    addi $t1, $t4, -1   # y = yMax - 1
-
-doSAD:
-    jal SAD
-    slt $s7, $s5, $s6
-    beq $s7, $zero, skipChange
-    add $s6, $s5, $zero
-    add $v0, $t0, $zero
-    add $v1, $t1, $zero
-
-skipChange:
-    beq $t5, $t6, exit   # if i == xMax*yMax, exit
-
-    # access arr[y][x]
-    mul $t9, $t1, $s1
-    add $t9, $t9, $t0
-    sll $t9, $t9, 2
-    add $t9, $a1, $t9
-    lw  $t9, 0($t9)
-
-    bne $t2, 1, dirfalse
-
-dirtrue:
-    bne $t0, $t7, notequal
-    beq $t1, $t8, notequal
-    addi $t1, $t1, 1
-    add  $t2, $zero, $zero
-    addi $t5, $t5, 1
-    j loop
-
-notequal:
-    bne $t1, $zero, notequalagain
-    beq $t0, $t7, notequalagain
-    addi $t0, $t0, 1
-    add  $t2, $zero, $zero
-    addi $t5, $t5, 1
-    j loop
-
-notequalagain:
-    addi $t0, $t0, 1
-    addi $t1, $t1, -1
-    addi $t5, $t5, 1
-    j loop
-
-dirfalse:
-    bne $t0, $zero, checktop
-    beq $t1, $t8, checktop
-    addi $t1, $t1, 1
-    li   $t2, 1
-    addi $t5, $t5, 1
-    j loop
-
-checktop:
-    bne $t1, $t8, nonehit
-    beq $t0, $t7, nonehit
-    addi $t0, $t0, 1
-    li   $t2, 1
-    addi $t5, $t5, 1
-    j loop
-
-nonehit:
-    addi $t0, $t0, -1
-    addi $t1, $t1, 1
-    addi $t5, $t5, 1
-    j loop
-
-
+# Exit routine
 exit:
-    lw   $ra, 0($sp)      # restore return address
-    addi $sp, $sp, 4
-    jr $ra
-
+    lw      $ra, 0($sp)
+    addi    $sp, $sp, 4
+    jr      $ra
 
 # ------------------------------------------------------------
-# SAD: calculates the sum of absolute difference
-# ------------------------------------------------------------       
+# SAD: sum of absolute differences between window and frame block
+# Optimized to precompute row offsets
+# Inputs:
+#   $t0 = x, $t1 = y
+#   $s1 = frame width, $s2 = frame height
+#   $s3 = window width, $s4 = window height
+#   $a1 = frame base, $a2 = window base
+# Output:
+#   $s5 = SAD sum
+# ------------------------------------------------------------
 SAD:
-    addi $sp, $sp, -40        # make stack space
-    sw $t0, 36($sp)           
-    sw $t1, 32($sp)
-    sw $t2, 28($sp)
-    sw $t3, 24($sp)
-    sw $t4, 20($sp)
-    sw $t5, 16($sp)
-    sw $t6, 12($sp)
-    sw $t7, 8($sp)
-    sw $t8, 4($sp)
-    sw $t9, 0($sp)    
+    addi    $sp, $sp, -32       # make stack space for temp registers
+    sw      $t0, 28($sp)
+    sw      $t1, 24($sp)
+    sw      $t6, 20($sp)
+    sw      $t7, 16($sp)
+    sw      $t8, 12($sp)
+    sw      $t9, 8($sp)
+    sw      $t4, 4($sp)
+    sw      $t5, 0($sp)
 
-    add $s5, $zero, $zero     # sum = 0
-    add $t7, $zero, $zero     # i = 0 (windowX offset)
+    add     $s5, $zero, $zero   # sum = 0
+
+    li      $t7, 0              # i = 0 (window width)
 
 sadL1:
-    bge $t7, $s3, sadOutExit  # if i >= windowX, exit outer loop
-    add $t8, $zero, $zero      # j = 0 (windowY offset)
+    bge     $t7, $s3, sadOutExit
+    li      $t8, 0              # j = 0 (window height)
+    
+    # Precompute row offset for frame
+    add     $t9, $t1, $t8       # y + j
+    mul     $t9, $t9, $s1       # (y+j) * frame_width
 
 sadL2:
-    bge $t8, $s4, sadInExit    # if j >= windowY, exit inner loop
+    bge     $t8, $s4, sadInExit
 
-    # FRAME INDEX: (y+j)*fileX + (x+i)
-    add $t9, $t1, $t8          # y + j
-    mul $t9, $t9, $s1          # (y+j)*fileX
-    add $t9, $t9, $t0          # + x
-    add $t9, $t9, $t7          # + i (window offset)
-    bltz $t9, sadSkip           # skip if somehow negative
-    sll $t9, $t9, 2            # word offset
-    add $t9, $a1, $t9           # frame address
-    lw $t4, 0($t9)             # load frame value
+    # FRAME index = row_offset + x + i
+    add     $t4, $t9, $t0
+    add     $t4, $t4, $t7
+    sll     $t4, $t4, 2
+    add     $t4, $a1, $t4
+    lw      $t4, 0($t4)
 
-    # WINDOW INDEX: j*windowX + i
-    mul $t6, $t8, $s3          # j*windowX  <-- reused $t6
-    add $t6, $t6, $t7          # + i
-    bltz $t6, sadSkip           # skip if negative
-    sll $t6, $t6, 2
-    add $t6, $a2, $t6           # window address
-    lw $t5, 0($t6)              # load window value
+    # WINDOW index = j * window_width + i
+    mul     $t6, $t8, $s3
+    add     $t6, $t6, $t7
+    sll     $t6, $t6, 2
+    add     $t6, $a2, $t6
+    lw      $t5, 0($t6)
 
     # absolute difference
-    sub $t6, $t4, $t5
-    bltz $t6, sadNeg
-    j sadAdd
-
+    sub     $t6, $t4, $t5
+    bltz    $t6, sadNeg
+    j       sadAdd
 sadNeg:
-    sub $t6, $zero, $t6
-
+    sub     $t6, $zero, $t6
 sadAdd:
-    add $s5, $s5, $t6           # sum += diff
-sadSkip:
-    addi $t8, $t8, 1            # j++
-    j sadL2
+    add     $s5, $s5, $t6
+
+    addi    $t8, $t8, 1
+    add     $t9, $t9, $s1        # increment row offset for next j
+    j       sadL2
 
 sadInExit:
-    addi $t7, $t7, 1            # i++
-    j sadL1
+    addi    $t7, $t7, 1
+    j       sadL1
 
 sadOutExit:
-    lw $t0, 36($sp)           
-    lw $t1, 32($sp)
-    lw $t2, 28($sp)
-    lw $t3, 24($sp)
-    lw $t4, 20($sp)
-    lw $t5, 16($sp)
-    lw $t6, 12($sp)
-    lw $t7, 8($sp)
-    lw $t8, 4($sp)
-    lw $t9, 0($sp)
-    addi $sp, $sp, 40
+    lw      $t0, 28($sp)
+    lw      $t1, 24($sp)
+    lw      $t6, 20($sp)
+    lw      $t7, 16($sp)
+    lw      $t8, 12($sp)
+    lw      $t9, 8($sp)
+    lw      $t4, 4($sp)
+    lw      $t5, 0($sp)
+    addi    $sp, $sp, 32
 
-    jr $ra
+    jr      $ra
