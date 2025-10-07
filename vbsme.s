@@ -780,10 +780,10 @@ print_result:
 vbsme:
     li      $v0, 0              # reset $v0 and $V1
     li      $v1, 0
-    
-    li $s2, 0x7FFFFFFF     # initialize best SAD to a large max value
 
     # insert your code here
+    
+    li $s2, 0x7FFFFFFF     # initialize best SAD to a large max value
 
     add $s0, $zero, $zero	#x
     add $s1, $zero, $zero	#y
@@ -824,10 +824,17 @@ UP_LOOP:
     sub $s0, $t2, $s1		#x = tier - y
     
     #check for xMax and yMax
-    bge $s0, $t0, UP_NEXT   # if x >= xMax → skip
-    bge $s1, $t1, UP_NEXT   # if y >= yMax → skip
-    bltz $s0, UP_NEXT       # if x < 0 → skip
-    bltz $s1, UP_NEXT       # if y < 0 → skip 
+    sub $t9, $s0, $t0   
+    bltz $t9, NEXT1      # if $t1 < 0, skip
+    j UP_NEXT            # else, branch
+NEXT1:
+    #check for xMax and yMax
+    sub $t9, $s1, $t1   # $t1 = $s0 - $t0
+    bltz $t9, NEXT2      # if $t1 < 0, skip
+    j UP_NEXT
+NEXT2:
+    bltz $s0, UP_NEXT       # if x < 0, skip
+    bltz $s1, UP_NEXT       # if y < 0, skip 
     #debug here idiot lmao i am going insane
    # DEBUG1:
     #	move $a0, $s0
@@ -852,12 +859,20 @@ SAD1:
     li   $t7, 0          # sum = 0 (SAD)
 
 OUTLOOP1:
-    bge  $t9, $s6, EXITSAD1      # if i >= windowY → exit
-
+    sub $t6, $t9, $s6     # $t1 = $s0 - $t0
+    sra $t6, $t6, 31      # shift sign bit to LSB
+    bne $t6, $zero, SKIP1  # skip if negative
+    j EXITSAD1             # branch if >= 0
+SKIP1:
     li   $t8, 0                 # reset j = 0 for each new row
 
 INLOOP1:
-    bge  $t8, $s5, NEXTROW1      # if j >= windowX → next row
+
+    sub $t6, $t8, $s5     # $t1 = $s0 - $t0
+    sra $t6, $t6, 31      # shift sign bit to LSB
+    bne $t6, $zero, SKIP2  # skip if negative
+    j NEXTROW1             # branch if >= 0
+SKIP2:
 
     #### Calculate address for arr[y+i][x+j]
     add  $t6, $s1, $t9          # t6 = y + i
@@ -896,14 +911,15 @@ NEXTROW1:
 
 EXITSAD1:
     #### Compare to best SAD (stored in $s2)
-    blt  $t7, $s2, UPDATEBEST1
+    sub $t9, $t7, $s2   # $t1 = $t7 - $s2
+    bltz $t9, UPDATEBEST1  # branch if $t7 < $s2
         beq $t7, $s2, UPDATEBEST1
     j	 UP_NEXT                    # return if not better
 
 UPDATEBEST1:
-    move $s2, $t7               # update best SAD = current SAD
-    move $v0, $s1               # store Y coordinate of best match
-    move $v1, $s0               # store X coordinate of best match
+    add $s2, $t7, $zero               # update best SAD = current SAD
+    add $v0, $s1, $zero               # store Y coordinate of best match
+    add $v1, $s0, $zero              # store X coordinate of best match
 ################################################################
 
 UP_NEXT:
@@ -916,8 +932,16 @@ DOWN_LOOP:
     sub $s0, $t2, $s1		#x = tier - y
     
     #check for out of bounds
-    bge $s0, $t0, DOWN_NEXT   # if x >= xMax → skip
-    bge $s1, $t1, DOWN_NEXT   # if y >= yMax → skip
+    #check for xMax and yMax
+    sub $t9, $s0, $t0   # $t1 = $s0 - $t0
+    bltz $t9, NEXT3      # if $t1 < 0, skip
+    j DOWN_NEXT            # else, branch
+NEXT3:
+    #check for xMax and yMax
+    sub $t9, $s1, $t1   # $t1 = $s0 - $t0
+    bltz $t9, NEXT4      # if $t1 < 0, skip
+    j DOWN_NEXT
+NEXT4:
     bltz $s0, DOWN_NEXT       # if x < 0 → skip
     bltz $s1, DOWN_NEXT       # if y < 0 → skip
     #debug here idiot lmao i am going insane
@@ -943,12 +967,20 @@ SAD2:
     li   $t7, 0          # sum = 0 (SAD)
 
 OUTLOOP2:
-    bge  $t9, $s6, EXITSAD2      # if i >= windowY → exit
+    sub $t6, $t9, $s6     # $t1 = $s0 - $t0
+    sra $t6, $t6, 31      # shift sign bit to LSB
+    bne $t6, $zero, SKIP3  # skip if negative
+    j EXITSAD2             # branch if >= 0
+SKIP3:
 
     li   $t8, 0                 # reset j = 0 for each new row
 
 INLOOP2:
-    bge  $t8, $s5, NEXTROW2      # if j >= windowX → next row
+    sub $t6, $t8, $s5     # $t1 = $s0 - $t0
+    sra $t6, $t6, 31      # shift sign bit to LSB
+    bne $t6, $zero, SKIP4  # skip if negative
+    j NEXTROW2             # branch if >= 0
+SKIP4:
 
     #### Calculate address for arr[y+i][x+j]
     add  $t6, $s1, $t9          # t6 = y + i
@@ -987,18 +1019,20 @@ NEXTROW2:
 
 EXITSAD2:
     #### Compare to best SAD (stored in $s2)
-    blt  $t7, $s2, UPDATEBEST2
+    sub $t9, $t7, $s2   # $t1 = $t7 - $s2
+    bltz $t9, UPDATEBEST2  # branch if $t7 < $s2
         beq $t7, $s2, UPDATEBEST2
     j    DOWN_NEXT                   # return if not better
 
 UPDATEBEST2:
-    move $s2, $t7               # update best SAD = current SAD
-    move $v0, $s1               # store Y coordinate of best match
-    move $v1, $s0               # store X coordinate of best match
+    add $s2, $t7, $zero               # update best SAD = current SAD
+    add $v0, $s1, $zero               # store Y coordinate of best match
+    add $v1, $s0, $zero               # store X coordinate of best match
 ################################################################
 DOWN_NEXT:
     addi $s1, $s1, 1
-    ble $s1, $t2, DOWN_LOOP
+    sub $t9, $s1, $t2   # $t0 = $s1 - $t2
+    blez $t9, DOWN_LOOP  # branch if $s1 <= $t2
 #loop again through outer loop increasing tier
 ENDDIRECT:
     addi $t2, $t2, 1
