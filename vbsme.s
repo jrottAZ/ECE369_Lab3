@@ -854,16 +854,10 @@ NEXTROW:
     addi $t9, $t9, 1            # i++
     j    OUTLOOP
 
-EXITSAD:
-    #### Compare to best SAD (stored in $s2)
- #   blt  $t7, $s2, UPDATEBEST
-  #  jr   $ra                    # return if not better
-
 FIRSTUPDATEBEST:
     move $s2, $t7               # update best SAD = current SAD
     move $v0, $s1               # store Y coordinate of best match
     move $v1, $s0               # store X coordinate of best match
-    jr   $ra
 ################################################################
 
 LOOPS:
@@ -1030,7 +1024,8 @@ ENDDIRECT:
     j LOOPS
 
 END:
-    j $ra
+
+    jr $ra
 
 
 
