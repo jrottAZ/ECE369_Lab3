@@ -480,6 +480,7 @@ window14:   .word    9, 9, 9, 9,
 
          
 newline: .asciiz     "\n" 
+space:   .asciiz " "
 
 
 ########################################################################################################################
@@ -668,26 +669,21 @@ main:
 
 ################### Print Result ####################################
 print_result:
-    # Printing $v0
+    # Printing $v0 (Row/Y)
     add     $a0, $v0, $zero     # Load $v0 for printing
     li      $v0, 1              # Load the system call numbers
     syscall
    
-    # Print newline.
-    la      $a0, newline          # Load value for printing
-    li      $v0, 4                # Load the system call numbers
+    # Print space.
+    la      $a0, space          # Load value for printing
+    li      $v0, 4              # Load the system call numbers
     syscall
    
-    # Printing $v1
+    # Printing $v1 (Column/X)
     add     $a0, $v1, $zero      # Load $v1 for printing
     li      $v0, 1                # Load the system call numbers
     syscall
 
-    # Print newline.
-    la      $a0, newline          # Load value for printing
-    li      $v0, 4                # Load the system call numbers
-    syscall
-   
     # Print newline.
     la      $a0, newline          # Load value for printing
     li      $v0, 4                # Load the system call numbers
@@ -701,181 +697,142 @@ print_result:
 
 
 # vbsme.s 
-# motion estimation is a routine in h.264 video codec that 
-# takes about 80% of the execution time of the whole code
-# given a frame(2d array, x and y dimensions can be any integer 
-# between 16 and 64) where "frame data" is stored under "frame"  
-# and a window (2d array of size 4x4, 4x8, 8x4, 8x8, 8x16, 16x8 
-# or 16x16) where "window data" is stored under "window" 
-# and size of "window" and "frame" arrays are stored under 
-# "asize"
-
-# - initially current sum of difference is set to a very large value
-# - move "window" over the "frame" one cell at a time starting with location (0,0)
-# - moves are based on the defined search pattern 
-# - for each move, function calculates  the sum of absolute difference (SAD) 
-#   between the window and the overlapping block on the frame.
-# - if the calculated sum of difference is LESS THAN OR EQUAL to the current sum of difference
-#   then the current sum of difference is updated and the coordinate of the top left corner 
-#   for that matching block in the frame is recorded. 
-
-# for example SAD of two 4x4 arrays "window" and "block" shown below is 3  
-# window         block
-# -------       --------
-# 1 2 2 3       1 4 2 3  
-# 0 0 3 2       0 0 3 2
-# 0 0 0 0       0 0 0 0 
-# 1 0 0 5       1 0 0 4
-
-# program keeps track of the window position that results 
-# with the minimum sum of absolute difference. 
-# after scannig the whole frame
-# program returns the coordinates of the block with the minimum SAD
-# in $v0 (row) and $v1 (col) 
-
-
-# Sample Inputs and Output shown below:
-# Frame:
+# Calculates the Minimum Sum of Absolute Difference (SAD) for a variable block size
+# motion estimation, following a diagonal search pattern.
 #
-#  0   1   2   3   0   0   0   0   0   0   0   0   0   0   0   0 
-#  1   2   3   4   4   5   6   7   8   9  10  11  12  13  14  15 
-#  2   3  32   1   2   3  12  14  16  18  20  22  24  26  28  30 
-#  3   4   1   2   3   4  18  21  24  27  30  33  36  39  42  45 
-#  0   4   2   3   4   5  24  28  32  36  40  44  48  52  56  60 
-#  0   5   3   4   5   6  30  35  40  45  50  55  60  65  70  75 
-#  0   6  12  18  24  30  36  42  48  54  60  66  72  78  84  90 
-#  0   7  14  21  28  35  42  49  56  63  70  77  84  91  98 105 
-#  0   8  16  24  32  40  48  56  64  72  80  88  96 104 112 120 
-#  0   9  18  27  36  45  54  63  72  81  90  99 108 117 126 135 
-#  0  10  20  30  40  50  60  70  80  90 100 110 120 130 140 150 
-#  0  11  22  33  44  55  66  77  88  99 110 121 132 143 154 165 
-#  0  12  24  36  48  60  72  84  96 108 120 132   0   1   2   3 
-#  0  13  26  39  52  65  78  91 104 117 130 143   1   2   3   4 
-#  0  14  28  42  56  70  84  98 112 126 140 154   2   3   4   5 
-#  0  15  30  45  60  75  90 105 120 135 150 165   3   4   5   6 
-
-# Window:
-#  0   1   2   3 
-#  1   2   3   4 
-#  2   3   4   5 
-#  3   4   5   6 
-
-# cord x = 12, cord y = 12 returned in $v0 and $v1 registers
+# Registers used:
+# $v0: Result Row (Y) coordinate (Return value 1)
+# $v1: Result Column (X) coordinate (Return value 2)
+#
+# $s0: Current Column (X) coordinate of frame block (j)
+# $s1: Current Row (Y) coordinate of frame block (i)
+# $s2: Minimum SAD found so far
+# $s3: Frame Width (j)
+# $s4: Frame Height (i)
+# $s5: Window Width (l)
+# $s6: Window Height (k)
+# $s7: Max Tier (tier_max = (i-k) + (j-l))
+#
+# $t0: Max Search X Index (X_max = j-l+1)
+# $t1: Max Search Y Index (Y_max = i-k+1)
+# $t2: Current Tier
+# $t3-t9: Temporary registers for SAD calculation
 
 .text
 .globl  vbsme
 
-# Your program must follow the required search pattern.  
-
 # Preconditions:
-#   1st parameter (a0) address of the first element of the dimension info (address of asize[0])
-#   2nd parameter (a1) address of the first element of the frame array (address of frame[0][0])
-#   3rd parameter (a2) address of the first element of the window array (address of window[0][0])
+#   1st parameter (a0) address of the dimension info (asize[0])
+#   2nd parameter (a1) address of the frame array (frame[0][0])
+#   3rd parameter (a2) address of the window array (window[0][0])
 # Postconditions:	
-#   result (v0) x coordinate of the block in the frame with the minimum SAD
-#          (v1) y coordinate of the block in the frame with the minimum SAD
+#   result (v0) Row (Y) coordinate of the block with the minimum SAD
+#          (v1) Column (X) coordinate of the block with the minimum SAD
 
 
 # Begin subroutine
 vbsme:
-    li      $v0, 0              # reset $v0 and $V1
-    li      $v1, 0
+    # --- STACK FRAME SETUP: Save Callee-Saved Registers ($s0 - $s7) ---
+    addi    $sp, $sp, -32       # Allocate space for 8 registers * 4 bytes
+    sw      $s7, 28($sp)
+    sw      $s6, 24($sp)
+    sw      $s5, 20($sp)
+    sw      $s4, 16($sp)
+    sw      $s3, 12($sp)
+    sw      $s2, 8($sp)
+    sw      $s1, 4($sp)
+    sw      $s0, 0($sp)
+    # -----------------------------------------------------------------
     
-    li $s2, 0x7FFFFFFF     # initialize best SAD to a large max value
-
-    # insert your code here
-
-    add $s0, $zero, $zero	#x
-    add $s1, $zero, $zero	#y
-
-    lw $s3, 4($a0)		#xGrid
-    lw $s4, 0($a0)   		#yGrid
-
-    lw $s5, 12($a0)   		#xWindow
-    lw $s6, 8($a0)  		#yWindow
-
-    sub $t0, $s3, $s5
-    addi $t0, $t0, 1		#xMax
+    li      $v0, 0              # reset $v0 (best Y)
+    li      $v1, 0              # reset $v1 (best X)
     
-    sub $t1, $s4, $s6
-    addi $t1, $t1, 1		#yMax
+    li $s2, 0x7FFFFFFF          # initialize best SAD to a large max value
 
-    add $s7, $t1, $t0
-    addi $s7, $s7, -1		#max tier
+    # Load Dimensions
+    lw $s4, 0($a0)   		    # $s4 = i (Frame Height/Y)
+    lw $s3, 4($a0)		    # $s3 = j (Frame Width/X)
+    lw $s6, 8($a0)  		    # $s6 = k (Window Height/Y)
+    lw $s5, 12($a0)   		    # $s5 = l (Window Width/X)
 
-    add $t2, $zero, $zero       #tier = 0
+    # Calculate max search indices (Exclusive Upper Bound)
+    sub $t1, $s4, $s6           # t1 = i - k (Max valid Y index, 12 for test 1)
+    addi $t1, $t1, 1		    # $t1 = Y_max = i - k + 1 (13)
+    
+    sub $t0, $s3, $s5           # t0 = j - l (Max valid X index, 12 for test 1)
+    addi $t0, $t0, 1		    # $t0 = X_max = j - l + 1 (13)
 
-    ########################## ADD IN SAD IMPLEMENTATION HERE ################
-    #set best sad to the output of this one  
-	
+    # Calculate max tier (Inclusive Upper Bound)
+    # Max tier = (Max Y index) + (Max X index) = (Y_max - 1) + (X_max - 1)
+    sub $t3, $t1, 1             # t3 = Max Y index (12)
+    sub $t4, $t0, 1             # t4 = Max X index (12)
+    add $s7, $t3, $t4           # $s7 = Max tier index (12 + 12 = 24)
+
+    add $t2, $zero, $zero       # $t2 = tier = 0
+
+################################################################
+# Main Diagonal Search Loop
 ################################################################
 
 LOOPS:
-    slt $t3, $t2, $s7           #tier < maxtier
-    
-    beq $t3, $zero, END
+    # Exit if tier > Max tier
+    bgt $t2, $s7, END           # if tier > max_tier ($s7) -> exit
 
-    andi $t4, $t2, 1            #check if tier is even and jump based on that
-    bne $t4, $zero, DOWN
-    	#going up otherwise
+    andi $t4, $t2, 1            # check if tier is even (t4=0) or odd (t4=1)
+    bne $t4, $zero, DOWN        # if odd, go DOWN (Y increases)
+
+    # If Even Tier: UP-RIGHT traverse (Y decreases, X increases)
 UP:
-    add $s1, $t2, $zero		#y = tier becuase its by row
+    move $s1, $t2		        # $s1 = y = tier (start row)
 UP_LOOP:
-    sub $s0, $t2, $s1		#x = tier - y
+    sub $s0, $t2, $s1		    # $s0 = x = tier - y
     
-    #check for xMax and yMax
-    bge $s0, $t0, UP_NEXT   # if x >= xMax → skip
-    bge $s1, $t1, UP_NEXT   # if y >= yMax → skip
-    bltz $s0, UP_NEXT       # if x < 0 → skip
-    bltz $s1, UP_NEXT       # if y < 0 → skip 
-    #debug here idiot lmao i am going insane
-   # DEBUG1:
-    #	move $a0, $s0
-    #	li $v0, 1
-    #	syscall
-    #	la $a0, space
-    #	li $v0, 4
-    #	syscall
-    #	move $a0, $s1
-    #	li $v0, 1
-    #	syscall
-    #	la $a0, newline
-    #	li $v0, 4
-    #	syscall
-
+    # ---------------------------------------------
+    # BOUNDS CHECK: Check if (x, y) is a valid top-left corner
+    # Valid range: 0 <= x < X_max ($t0) AND 0 <= y < Y_max ($t1)
     
-    ########################## ADD IN SAD IMPLEMENTATION HERE ################
+    # Check Y bounds ($s1)
+    bge $s1, $t1, UP_NEXT       # if y >= Y_max ($t1) (out of bounds) → skip SAD
+    bltz $s1, UP_NEXT           # if y < 0 (out of bounds) → skip SAD
+    
+    # Check X bounds ($s0)
+    bge $s0, $t0, UP_NEXT       # if x >= X_max ($t0) (out of bounds) → skip SAD
+    bltz $s0, UP_NEXT           # if x < 0 (out of bounds) → skip SAD
+    
+    # ---------------------------------------------
+    
+    ########################## SAD IMPLEMENTATION ################
 SAD1:
     # initialize
-    li   $t9, 0          # i = 0
-    li   $t8, 0          # j = 0
-    li   $t7, 0          # sum = 0 (SAD)
+    li   $t9, 0          # t9 = i = 0 (window row)
+    li   $t8, 0          # t8 = j = 0 (window column)
+    li   $t7, 0          # t7 = sum = 0 (SAD)
 
 OUTLOOP1:
-    bge  $t9, $s6, EXITSAD1      # if i >= windowY → exit
+    bge  $t9, $s6, EXITSAD1      # if i >= WindowY ($s6) → exit
 
     li   $t8, 0                 # reset j = 0 for each new row
 
 INLOOP1:
-    bge  $t8, $s5, NEXTROW1      # if j >= windowX → next row
+    bge  $t8, $s5, NEXTROW1      # if j >= WindowX ($s5) → next row
 
-    #### Calculate address for arr[y+i][x+j]
-    add  $t6, $s1, $t9          # t6 = y + i
-    add  $t5, $s0, $t8          # t5 = x + j
-    mul  $t4, $t6, $s3          # t4 = (y + i) * fileX
-    add  $t3, $t4, $t5          # t3 = (y + i) * fileX + (x + j)
+    #### Calculate address for frame[Y+i][X+j]
+    add  $t6, $s1, $t9          # t6 = Y + i
+    add  $t5, $s0, $t8          # t5 = X + j
+    mul  $t4, $t6, $s3          # t4 = (Y + i) * FrameWidth ($s3)
+    add  $t3, $t4, $t5          # t3 = (Y + i) * FrameWidth + (X + j) (element index)
     sll  $t3, $t3, 2            # byte offset (*4)
-    add  $t5, $a1, $t3          # address = arr base + offset
-    lw   $t6, 0($t5)            # t6 = arr[y+i][x+j]
+    add  $t5, $a1, $t3          # address = frame base ($a1) + offset
+    lw   $t6, 0($t5)            # t6 = frame[Y+i][X+j]
 
     #### Calculate address for window[i][j]
-    mul  $t4, $t9, $s5          # t4 = i * windowX
-    add  $t4, $t4, $t8          # t4 = i * windowX + j
+    mul  $t4, $t9, $s5          # t4 = i * WindowWidth ($s5)
+    add  $t4, $t4, $t8          # t4 = i * WindowWidth + j (element index)
     sll  $t4, $t4, 2            # byte offset (*4)
-    add  $t5, $a2, $t4          # address = window base + offset
+    add  $t5, $a2, $t4          # address = window base ($a2) + offset
     lw   $t3, 0($t5)            # t3 = window[i][j]
 
-    #### diff = abs(arr - window)
+    #### diff = abs(frame - window)
     sub  $t4, $t6, $t3
     bltz $t4, NEG_DIFF1
     j    POS_DIFF1
@@ -897,76 +854,71 @@ NEXTROW1:
 EXITSAD1:
     #### Compare to best SAD (stored in $s2)
     blt  $t7, $s2, UPDATEBEST1
-        beq $t7, $s2, UPDATEBEST1
     j	 UP_NEXT                    # return if not better
 
 UPDATEBEST1:
     move $s2, $t7               # update best SAD = current SAD
-    move $v0, $s1               # store Y coordinate of best match
-    move $v1, $s0               # store X coordinate of best match
+    move $v0, $s1               # store Y (row) coordinate of best match
+    move $v1, $s0               # store X (col) coordinate of best match
 ################################################################
 
 UP_NEXT:
-    addi $s1, $s1, -1
+    addi $s1, $s1, -1           # Y--
     bgez $s1, UP_LOOP
     j ENDDIRECT
-DOWN:
-    add $s1, $zero, $zero	#y = 0
-DOWN_LOOP:
-    sub $s0, $t2, $s1		#x = tier - y
     
-    #check for out of bounds
-    bge $s0, $t0, DOWN_NEXT   # if x >= xMax → skip
-    bge $s1, $t1, DOWN_NEXT   # if y >= yMax → skip
-    bltz $s0, DOWN_NEXT       # if x < 0 → skip
-    bltz $s1, DOWN_NEXT       # if y < 0 → skip
-    #debug here idiot lmao i am going insane
-   # DEBUG2:
-    #	move $a0, $s0
-    #	li $v0, 1
-    #	syscall
-    #	la $a0, space
-    #	li $v0, 4
-    #	syscall
-    #	move $a0, $s1
-    #	li $v0, 1
-    #	syscall
-    #	la $a0, newline
-    #	li $v0, 4
-    #	syscall
-
-    ########################## ADD IN SAD IMPLEMENTATION HERE ################
+    # If Odd Tier: DOWN-LEFT traverse (Y increases, X decreases)
+DOWN:
+    add $s1, $zero, $zero	    # $s1 = y = 0 (start row)
+DOWN_LOOP:
+    sub $s0, $t2, $s1		    # $s0 = x = tier - y
+    
+    # ---------------------------------------------
+    # BOUNDS CHECK: Check if (x, y) is a valid top-left corner
+    # Valid range: 0 <= x < X_max ($t0) AND 0 <= y < Y_max ($t1)
+    
+    # Check Y bounds ($s1)
+    bge $s1, $t1, DOWN_NEXT     # if y >= Y_max ($t1) (out of bounds) → skip SAD
+    bltz $s1, DOWN_NEXT         # if y < 0 (out of bounds) → skip SAD
+    
+    # Check X bounds ($s0)
+    bge $s0, $t0, DOWN_NEXT     # if x >= X_max ($t0) (out of bounds) → skip SAD
+    bltz $s0, DOWN_NEXT         # if x < 0 (out of bounds) → skip SAD
+    
+    # ---------------------------------------------
+    
+    ########################## SAD IMPLEMENTATION ################
 SAD2:
     # initialize
-    li   $t9, 0          # i = 0
-    li   $t8, 0          # j = 0
-    li   $t7, 0          # sum = 0 (SAD)
+    li   $t9, 0          # t9 = i = 0 (window row)
+    li   $t8, 0          # t8 = j = 0 (window column)
+    li   $t7, 0          # t7 = sum = 0 (SAD)
 
 OUTLOOP2:
-    bge  $t9, $s6, EXITSAD2      # if i >= windowY → exit
+    bge  $t9, $s6, EXITSAD2      # if i >= WindowY ($s6) → exit
 
     li   $t8, 0                 # reset j = 0 for each new row
 
 INLOOP2:
-    bge  $t8, $s5, NEXTROW2      # if j >= windowX → next row
+    bge  $t8, $s5, NEXTROW2      # if j >= WindowX ($s5) → next row
 
-    #### Calculate address for arr[y+i][x+j]
-    add  $t6, $s1, $t9          # t6 = y + i
-    add  $t5, $s0, $t8          # t5 = x + j
-    mul  $t4, $t6, $s3          # t4 = (y + i) * fileX
-    add  $t3, $t4, $t5          # t3 = (y + i) * fileX + (x + j)
+    #### Calculate address for frame[Y+i][X+j]
+    add  $t6, $s1, $t9          # t6 = Y + i
+    add  $t5, $s0, $t8          # t5 = X + j
+    mul  $t4, $t6, $s3          # t4 = (Y + i) * FrameWidth ($s3)
+    add  $t3, $t4, $t5          # t3 = (Y + i) * FrameWidth + (X + j) (element index)
     sll  $t3, $t3, 2            # byte offset (*4)
-    add  $t5, $a1, $t3          # address = arr base + offset
-    lw   $t6, 0($t5)            # t6 = arr[y+i][x+j]
+    add  $t5, $a1, $t3          # address = frame base ($a1) + offset
+    lw   $t6, 0($t5)            # t6 = frame[Y+i][X+j]
 
     #### Calculate address for window[i][j]
-    mul  $t4, $t9, $s5          # t4 = i * windowX
-    add  $t4, $t4, $t8          # t4 = i * windowX + j
+    mul  $t4, $t9, $s5          # t4 = i * WindowWidth ($s5)
+    add  $t4, $t4, $t8          # t4 = i * WindowWidth + j (element index)
     sll  $t4, $t4, 2            # byte offset (*4)
-    add  $t5, $a2, $t4          # address = window base + offset
+    add  $t5, $a2, $t4          # address = window base ($a2) + offset
     lw   $t3, 0($t5)            # t3 = window[i][j]
 
-    #### diff = abs(arr - window)
+    #### diff = abs(frame - window)
     sub  $t4, $t6, $t3
     bltz $t4, NEG_DIFF2
     j    POS_DIFF2
@@ -988,22 +940,33 @@ NEXTROW2:
 EXITSAD2:
     #### Compare to best SAD (stored in $s2)
     blt  $t7, $s2, UPDATEBEST2
-        beq $t7, $s2, UPDATEBEST2
     j    DOWN_NEXT                   # return if not better
 
 UPDATEBEST2:
     move $s2, $t7               # update best SAD = current SAD
-    move $v0, $s1               # store Y coordinate of best match
-    move $v1, $s0               # store X coordinate of best match
+    move $v0, $s1               # store Y (row) coordinate of best match
+    move $v1, $s0               # store X (col) coordinate of best match
 ################################################################
 DOWN_NEXT:
-    addi $s1, $s1, 1
-    ble $s1, $t2, DOWN_LOOP
-#loop again through outer loop increasing tier
+    addi $s1, $s1, 1            # Y++
+    ble $s1, $t2, DOWN_LOOP     # Loop while Y <= tier
+    
+# loop again through outer loop increasing tier
 ENDDIRECT:
-    addi $t2, $t2, 1
+    addi $t2, $t2, 1            # tier++
     j LOOPS
 
 END:
+    # --- STACK FRAME TEARDOWN: Restore Callee-Saved Registers ($s0 - $s7) ---
+    lw      $s0, 0($sp)
+    lw      $s1, 4($sp)
+    lw      $s2, 8($sp)
+    lw      $s3, 12($sp)
+    lw      $s4, 16($sp)
+    lw      $s5, 20($sp)
+    lw      $s6, 24($sp)
+    lw      $s7, 28($sp)
+    addi    $sp, $sp, 32        # Deallocate stack space
+    # -----------------------------------------------------------------------
 
     jr $ra
