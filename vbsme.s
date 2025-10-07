@@ -804,7 +804,67 @@ vbsme:
     add $t2, $zero, $zero       #tier = 0
 
     ########################## ADD IN SAD IMPLEMENTATION HERE ################
-    #set best sad to the output of this one
+    #set best sad to the output of this one  
+SAD:
+    # initialize
+    li   $t9, 0          # i = 0
+    li   $t8, 0          # j = 0
+    li   $t7, 0          # sum = 0 (SAD)
+
+OUTLOOP:
+    bge  $t9, $s6, FIRSTUPDATEBEST      # if i >= windowY → exit
+
+    li   $t8, 0                 # reset j = 0 for each new row
+
+INLOOP:
+    bge  $t8, $s5, NEXTROW      # if j >= windowX → next row
+
+    #### Calculate address for arr[y+i][x+j]
+    add  $t6, $s1, $t9          # t6 = y + i
+    add  $t5, $s0, $t8          # t5 = x + j
+    mul  $t4, $t6, $s3          # t4 = (y + i) * fileX
+    add  $t3, $t4, $t5          # t3 = (y + i) * fileX + (x + j)
+    sll  $t3, $t3, 2            # byte offset (*4)
+    add  $t5, $a1, $t3          # address = arr base + offset
+    lw   $t6, 0($t5)            # t6 = arr[y+i][x+j]
+
+    #### Calculate address for window[i][j]
+    mul  $t4, $t9, $s5          # t4 = i * windowX
+    add  $t4, $t4, $t8          # t4 = i * windowX + j
+    sll  $t4, $t4, 2            # byte offset (*4)
+    add  $t5, $a2, $t4          # address = window base + offset
+    lw   $t3, 0($t5)            # t3 = window[i][j]
+
+    #### diff = abs(arr - window)
+    sub  $t4, $t6, $t3
+    bltz $t4, NEG_DIFF
+    j    POS_DIFF
+
+NEG_DIFF:
+    sub  $t4, $zero, $t4
+POS_DIFF:
+
+    #### sum += diff
+    add  $t7, $t7, $t4
+
+    addi $t8, $t8, 1            # j++
+    j    INLOOP
+
+NEXTROW:
+    addi $t9, $t9, 1            # i++
+    j    OUTLOOP
+
+EXITSAD:
+    #### Compare to best SAD (stored in $s2)
+ #   blt  $t7, $s2, UPDATEBEST
+  #  jr   $ra                    # return if not better
+
+FIRSTUPDATEBEST:
+    move $s2, $t7               # update best SAD = current SAD
+    move $v0, $s1               # store Y coordinate of best match
+    move $v1, $s0               # store X coordinate of best match
+    jr   $ra
+################################################################
 
 LOOPS:
     slt $t3, $t2, $s7           #tier < maxtier
@@ -827,7 +887,65 @@ UPIN:
     beq $t6, $zero, ENDDIRECT
 
     ########################## ADD IN SAD IMPLEMENTATION HERE ################
+SAD1:
+    # initialize
+    li   $t9, 0          # i = 0
+    li   $t8, 0          # j = 0
+    li   $t7, 0          # sum = 0 (SAD)
 
+OUTLOOP1:
+    bge  $t9, $s6, EXITSAD1      # if i >= windowY → exit
+
+    li   $t8, 0                 # reset j = 0 for each new row
+
+INLOOP1:
+    bge  $t8, $s5, NEXTROW1      # if j >= windowX → next row
+
+    #### Calculate address for arr[y+i][x+j]
+    add  $t6, $s1, $t9          # t6 = y + i
+    add  $t5, $s0, $t8          # t5 = x + j
+    mul  $t4, $t6, $s3          # t4 = (y + i) * fileX
+    add  $t3, $t4, $t5          # t3 = (y + i) * fileX + (x + j)
+    sll  $t3, $t3, 2            # byte offset (*4)
+    add  $t5, $a1, $t3          # address = arr base + offset
+    lw   $t6, 0($t5)            # t6 = arr[y+i][x+j]
+
+    #### Calculate address for window[i][j]
+    mul  $t4, $t9, $s5          # t4 = i * windowX
+    add  $t4, $t4, $t8          # t4 = i * windowX + j
+    sll  $t4, $t4, 2            # byte offset (*4)
+    add  $t5, $a2, $t4          # address = window base + offset
+    lw   $t3, 0($t5)            # t3 = window[i][j]
+
+    #### diff = abs(arr - window)
+    sub  $t4, $t6, $t3
+    bltz $t4, NEG_DIFF1
+    j    POS_DIFF1
+
+NEG_DIFF1:
+    sub  $t4, $zero, $t4
+POS_DIFF1:
+
+    #### sum += diff
+    add  $t7, $t7, $t4
+
+    addi $t8, $t8, 1            # j++
+    j    INLOOP1
+
+NEXTROW1:
+    addi $t9, $t9, 1            # i++
+    j    OUTLOOP1
+
+EXITSAD1:
+    #### Compare to best SAD (stored in $s2)
+    blt  $t7, $s2, UPDATEBEST1
+    j	 ENDDIRECT                    # return if not better
+
+UPDATEBEST1:
+    move $s2, $t7               # update best SAD = current SAD
+    move $v0, $s1               # store Y coordinate of best match
+    move $v1, $s0               # store X coordinate of best match
+################################################################
     j ENDDIRECT
 
 DOWN:
@@ -844,7 +962,65 @@ DOWNIN:
     beq $t6, $zero, ENDDIRECT
 
     ########################## ADD IN SAD IMPLEMENTATION HERE ################
+SAD2:
+    # initialize
+    li   $t9, 0          # i = 0
+    li   $t8, 0          # j = 0
+    li   $t7, 0          # sum = 0 (SAD)
 
+OUTLOOP2:
+    bge  $t9, $s6, EXITSAD2      # if i >= windowY → exit
+
+    li   $t8, 0                 # reset j = 0 for each new row
+
+INLOOP2:
+    bge  $t8, $s5, NEXTROW2      # if j >= windowX → next row
+
+    #### Calculate address for arr[y+i][x+j]
+    add  $t6, $s1, $t9          # t6 = y + i
+    add  $t5, $s0, $t8          # t5 = x + j
+    mul  $t4, $t6, $s3          # t4 = (y + i) * fileX
+    add  $t3, $t4, $t5          # t3 = (y + i) * fileX + (x + j)
+    sll  $t3, $t3, 2            # byte offset (*4)
+    add  $t5, $a1, $t3          # address = arr base + offset
+    lw   $t6, 0($t5)            # t6 = arr[y+i][x+j]
+
+    #### Calculate address for window[i][j]
+    mul  $t4, $t9, $s5          # t4 = i * windowX
+    add  $t4, $t4, $t8          # t4 = i * windowX + j
+    sll  $t4, $t4, 2            # byte offset (*4)
+    add  $t5, $a2, $t4          # address = window base + offset
+    lw   $t3, 0($t5)            # t3 = window[i][j]
+
+    #### diff = abs(arr - window)
+    sub  $t4, $t6, $t3
+    bltz $t4, NEG_DIFF2
+    j    POS_DIFF2
+
+NEG_DIFF2:
+    sub  $t4, $zero, $t4
+POS_DIFF2:
+
+    #### sum += diff
+    add  $t7, $t7, $t4
+
+    addi $t8, $t8, 1            # j++
+    j    INLOOP2
+
+NEXTROW2:
+    addi $t9, $t9, 1            # i++
+    j    OUTLOOP2
+
+EXITSAD2:
+    #### Compare to best SAD (stored in $s2)
+    blt  $t7, $s2, UPDATEBEST2
+    j    ENDDIRECT                   # return if not better
+
+UPDATEBEST2:
+    move $s2, $t7               # update best SAD = current SAD
+    move $v0, $s1               # store Y coordinate of best match
+    move $v1, $s0               # store X coordinate of best match
+################################################################
     j ENDDIRECT
 
 
@@ -855,35 +1031,6 @@ ENDDIRECT:
 
 END:
     j $ra
-
-    
-
-    
-
-    
-
-                  
-
-
-
-
-    
-
-    
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
 
 
 
