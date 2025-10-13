@@ -1,6 +1,6 @@
 # Fall 2025
 # Team Members:  John Rottinghaus, Dylan Correa, Joshua Dokken
-# % Effort    :   
+# % Effort    : Dylan 35%, John 35%, Joshua 30%  
 #
 # ECE369A,  
 # 
