@@ -1,0 +1,242 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 10/13/2025 02:12:06 PM
+// Design Name: 
+// Module Name: controller
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg);
+    input [5:0] opcode;
+    input [5:0] func;
+    output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg;
+    output reg [3:0] ALUOp;
+    parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011;
+    parameter sw = 6'b101011, lh = 6'b100001, sh = 6'b101001, lb = 6'b100000, sb = 6'b101000;
+    parameter andi = 6'b001100, ori = 6'b001101, xori = 6'b001110, beq = 6'b000100;
+     
+    
+    always @(*) begin
+        RegDst   <= 0;
+        ALUSrc   <= 0;
+        MemToReg <= 0;
+        RegWrite <= 0;
+        MemRead  <= 0;
+        MemWrite <= 0;
+        Branch   <= 0;
+        ALUOp    <= 4'b0000;
+        
+        case(opcode)
+    
+            rType: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 0;
+                Branch <= 0;
+                RegDst <= 1;
+                case(func)
+                
+                    //ADD
+                    6'b100000: begin
+                        ALUOp <= 4'b0010;
+                    end
+                    
+                    //SUB
+                    6'b100010: begin
+                        ALUOp <= 4'b0110;
+                    end
+                    
+                    //SLT
+                    6'b101010: begin
+                        ALUOp <= 4'b0111;
+                    end
+                    
+                    //AND
+                    6'b100100: begin
+                        ALUOp <= 4'b0000;
+                    end
+                    
+                    //OR
+                    6'b100101: begin
+                        ALUOp <= 4'b0001;
+                    end
+                    
+                    //NOR
+                    6'b100111: begin
+                        ALUOp <= 4'b1100;
+                    end
+                    
+                    //XOR
+                    6'b100110: begin
+                    //////////////////////////////NEeeds to be implemented to the ALU
+                        ALUOp <= 4'b1100;
+                    end
+                    
+                    //SRL
+                    6'b000010: begin
+                    //////////////////////////////Needs to be implemented to the ALU
+                        ALUOp <= 4'b1100;
+                    end
+                    
+                    //SLL
+                    6'b000000: begin
+                    //////////////////////////////Needs to be implemented to the ALU
+                        ALUOp <= 4'b1100;
+                    end
+                
+                endcase
+            end
+            
+            addi: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0010;
+                RegDst <= 0;
+            end
+            
+            slti: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0111;
+                RegDst <= 0;
+            end
+            
+            lw: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 1;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0010;
+                RegDst <= 0;
+            end
+            
+            sw: begin
+                RegWrite <= 0;
+                MemWrite <= 1;
+                MemRead <= 0;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0010;
+                RegDst <= 0;
+            end
+/////////////////////////NEED TO IMPLEMENT THESE CORRECTLY////////////////////////////
+            lh: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 1;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 2'b00;
+                RegDst <= 0;
+            end
+            
+            sh: begin
+                RegWrite <= 0;
+                MemWrite <= 1;
+                MemRead <= 0;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 2'b00;
+                RegDst <= 0;
+            end
+            
+            lb: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 1;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 2'b00;
+                RegDst <= 0;
+            end
+            
+            sb: begin
+                RegWrite <= 0;
+                MemWrite <= 1;
+                MemRead <= 0;
+                MemToReg <= 0;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 2'b00;
+                RegDst <= 0;
+            end
+////////////////////////////////////////////////////////////////////////////////////////          
+           andi: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0000;
+                RegDst <= 0;
+            end
+            
+            ori: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 1;
+                Branch <= 0;
+                ALUOp <= 4'b0001;
+                RegDst <= 0;
+            end
+            
+            xori: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 1;
+                Branch <= 0;
+                //////////////////////////////Needs to be implemented to the ALU
+                ALUOp <= 4'b0001;
+                RegDst <= 0;
+            end
+            
+             beq: begin
+                RegWrite <= 0;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 0;
+                ALUSrc <= 0;
+                Branch <= 1;
+                ALUOp <= 4'b0110;
+                RegDst <= 0;
+            end
+
+        endcase
+    end
+
+endmodule
