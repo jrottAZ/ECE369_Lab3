@@ -38,13 +38,17 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
     /* Please fill in the implementation here... */
     always @(*) begin
         case (ALUControl)
-            4'b0000: ALUResult = A & B;                    // AND
-            4'b0001: ALUResult = A | B;                    // OR
-            4'b0010: ALUResult = A + B;                    // ADD
-            4'b0110: ALUResult = A - B;                    // SUB
-            4'b0111: ALUResult = (A < B) ? 32'b1 : 32'b0;  // SLT
-            4'b1100: ALUResult = ~(A | B);                 // NOR
-            default: ALUResult = 32'b0;                    // default safe value
+            4'b0000: ALUResult <= A & B;                    //AND
+            4'b0001: ALUResult <= A | B;                    //OR
+            4'b0010: ALUResult <= A + B;                    //ADD
+            4'b0011: ALUResult <= A - B;                    //SUB
+            4'b0100: ALUResult <= (A < B) ? 32'b1 : 32'b0;  //SLT
+            4'b0101: ALUResult <= ~(A | B);                 //NOR
+            4'b0110: ALUResult <= (A > B) ? 32'b1 : 32'b0;  //SGT
+            4'b1000: ALUResult <= A << B;                   //SLL
+            4'b1001: ALUResult <= A >> B;                   //SRL
+            4'b1010: ALUResult <= A^B;                      //XOR
+            default: ALUResult <= 32'b0;                    // default safe value
         endcase
     end
            assign Zero = (ALUResult == 0);
