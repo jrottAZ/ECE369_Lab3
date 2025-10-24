@@ -20,9 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Datapath(Clk, Rst);
+module Datapath(Clk, Rst, ALUOut);
 
     input Clk, Rst;
+    output [31:0] ALUOut;
 
     wire ClkOut;
     
@@ -373,6 +374,9 @@ module Datapath(Clk, Rst);
         
     end
     
+    
+    ///////////for testing/////
+    assign ALUOut = ALU1ResultM;
     
 
     
