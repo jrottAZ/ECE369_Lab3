@@ -32,14 +32,15 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
      
     
     always @(*) begin
+        RegWrite   <= 0;
         RegDst   <= 0;
-        ALUSrc   <= 0;
-        MemToReg <= 0;
-        RegWrite <= 0;
-        MemRead  <= 0;
-        MemWrite <= 0;
-        Branch   <= 0;
-        ALUOp    <= 4'b0000;
+        ALUSrc <= 0;
+        ALUOp    <= 4'b1111;
+        Branch <= 0;
+        MemWrite  <= 0;
+        MemRead <= 0;
+        MemToReg   <= 0;
+        
         
         case(opcode)
     
@@ -257,19 +258,18 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b0110;
                 RegDst <= 0;
                 
                 case(func)
                 
                     //BGEZ
                     6'b000001: begin
-                        ALUOp <= 4'b0110; 
+                        ALUOp <= 4'b1100; 
                     end
                     
                     //BLTZ
                     6'b000000: begin
-                        ALUOp <= 4'b0110;
+                        ALUOp <= 4'b1011;
                     end
                 
                 endcase
@@ -282,7 +282,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b0110;
+                ALUOp <= 4'b1101;
                 RegDst <= 0;
             end
             
@@ -293,7 +293,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b0110;
+                ALUOp <= 4'b1100;
                 RegDst <= 0;
             end
             

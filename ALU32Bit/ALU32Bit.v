@@ -48,6 +48,11 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
             4'b1000: ALUResult <= A << B;                   //SLL
             4'b1001: ALUResult <= A >> B;                   //SRL
             4'b1010: ALUResult <= A^B;                      //XOR
+            4'b1011: ALUResult <= (A >= 0) ? 32'b1 : 32'b0; //GTEZ
+            4'b1100: ALUResult <= (A >= 0) ? 32'b0 : 32'b1; //LTZ
+            4'b1100: ALUResult <= (A > 0) ? 32'b1 : 32'b0;  //GTZ
+            4'b1101: ALUResult <= (A > 0) ? 32'b0 : 32'b1;  //LTEZ
+            
             default: ALUResult <= 32'b0;                    // default safe value
         endcase
     end
