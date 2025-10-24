@@ -1,0 +1,150 @@
+#include <stdio.h>
+#include <iostream>
+#include <vector>
+using namespace std;
+
+
+void vbsme(vector<vector<int>> arr,int fileX, int fileY, int windowX, int windowY){
+    //NOTE: we will need to add +1 if we want it in coordinates starting at (1, 1)
+    //fileX is the x dimension of the whole grid
+
+    //fileY is the y dimension of the whole grid
+
+    //windowX is the x dimension of the window
+
+    //windowY is the y dimension of the window
+
+    // x is the top left x of window and same with y, dir is the direction (up/down the diagonal is going)
+    int x = 0;
+    int y = 0;
+    int dir = 0;
+
+    int bestX = 0;
+    int bestY = 0;
+
+    //max that x and y can do foe window to not leave the bounds
+    int xMax = fileX - (windowX - 1);
+    int yMax = fileY - (windowY - 1);
+    cout << xMax * yMax << endl;
+    for(int i = 0; i < xMax * yMax; i++){
+        cout << arr[x][y] << " " << i << endl;
+        //if we are moving up and right
+        if(dir == 1){
+
+            //check that we dont hit right boundary
+            if((x == xMax - 1) && (y != yMax - 1)){
+                y++;
+                dir = 0;
+            }
+            //check that we dont hit top boundary
+            else if((y == 0) && (x != xMax - 1)){
+                x++;
+                dir = 0;
+            }
+            //if no boundaries hit, go up and right
+            else{
+                x++;
+                y--;
+            }
+        }
+        else{
+
+            //check that we dont hit right boundary
+            if((x == 0) && (y != yMax - 1)){
+                y++;
+                dir = 1;
+            }
+            //check that we dont hit top boundary
+            else if((y == yMax - 1) && (x != xMax - 1)){
+                x++;
+                dir = 1;
+            }
+            //if no boundaries hit, down up and left
+            else{
+                x--;
+                y++;
+            }
+        }
+    }
+    
+
+}
+
+
+int main() {
+     vector<vector<int>> array = {
+        {1,  2,  6,  7,  15},
+        {3,  5,  8,  14,  16},
+        {4, 9, 13, 17, 22},
+        {10, 12, 18, 21, 23},
+        {11, 19, 20, 24, 25}
+    };
+
+    vbsme(array, 5, 5, 2, 2);
+    return 0;
+}
+
+////////////////////////////////Option 2////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <vector>
+using namespace std;
+
+void vbsme(const vector<vector<int>>& arr, int fileX, int fileY, int windowX, int windowY) {
+    int xMax = fileX - windowX + 1;
+    int yMax = fileY - windowY + 1;
+
+    int maxTier = xMax + yMax - 2; // max Manhattan distance from (0,0)
+
+    cout << "Total valid positions: " << xMax * yMax << endl;
+
+    for (int tier = 0; tier <= maxTier; tier++) {
+        if (tier % 2 == 0) {
+            // Even tier: traverse from bottom to top
+            for (int r = tier; r >= 0; r--) {
+                int c = tier - r;
+                if (r < xMax && c < yMax) {
+                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
+                }
+            }
+        } else {
+            // Odd tier: traverse from top to bottom
+            for (int r = 0; r <= tier; r++) {
+                int c = tier - r;
+                if (r < xMax && c < yMax) {
+                    cout << "Visiting (" << r << "," << c << ") → " << arr[r][c] << endl;
+                }
+            }
+        }
+    }
+}
+int main() {
+    vector<vector<int>> array = {
+        {1,  2,  6,  7,  15},
+        {3,  5,  8, 14,  16},
+        {4,  9, 13, 17,  22},
+        {10, 12, 18, 21, 23},
+        {11, 19, 20, 24, 25}
+    };
+
+    vbsme(array, 5, 5, 2, 2);  // Try with a 3x3 window
+    return 0;
+}
+
+
+int SAD(int x, int y, int xwind, int ywind, const vector<vector<int>>& windArr, const vector<vector<int>>& gridArr){
+    int sum = 0;
+
+    for(int i = 0; i < xwind; i++){
+        for(int j = 0; j < ywind; j++){
+            if(windArr[y][x] < gridArr[y][x]){
+                sum += gridArr[y][x] - windArr[y][x];
+            }
+            else{
+                sum += windArr[y][x] - gridArr[y][x];
+            }
+        }
+    }
+    return sum;
+
+}

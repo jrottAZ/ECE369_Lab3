@@ -1,0 +1,99 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+// Define a structure to hold the frame and window dimensions
+struct FrameWindowInfo {
+    int frame_width;
+    int frame_height;
+    int window_width;
+    int window_height;
+};
+
+/**
+ * @brief Performs a diagonal/zigzag traversal across a 2D frame,
+ * checking every valid top-left window position (x, y).
+ * * @param info A structure containing the frame and window dimensions.
+ */
+void diagonal_zigzag_traversal(const FrameWindowInfo& info) {
+    
+    // Calculate maximum starting indices (xMax and yMax)
+    // These are the loop limits, where the last valid index is Max - 1.
+    int xMax = info.frame_width - info.window_width + 1;
+    int yMax = info.frame_height - info.window_height + 1;
+    
+    if (xMax <= 0 || yMax <= 0) {
+        std::cerr << "Error: Window is larger than the frame. No traversal possible." << std::endl;
+        return;
+    }
+
+    // The total number of diagonals to traverse is (xMax - 1) + (yMax - 1) + 1.
+    int total_diagonals = xMax + yMax - 1;
+
+    std::cout << "Starting Diagonal/Zigzag Traversal (Search Area: " 
+              << xMax << "x" << yMax << "):" << std::endl;
+    std::cout << "--------------------------------------" << std::endl;
+    
+    // Outer loop iterates through each diagonal, where 's' is the sum of coordinates (x + y).
+    for (int s = 0; s < total_diagonals; ++s) {
+        
+        // Determine the traversal direction based on the diagonal index 's'.
+        // This alternates the direction to create the zigzag pattern.
+        
+        if (s % 2 != 0) { // Odd sum: UP-RIGHT traversal (y decreases as x increases)
+            
+            // Find the starting x-coordinate for this diagonal.
+            // It's the minimum of 's' (for diagonals starting at 0,yMax-1) and xMax - 1 (for diagonals hitting xMax-1,0).
+            int x_start = std::min(s, xMax - 1);
+            
+            // Inner loop traverses the diagonal by decrementing x.
+            for (int x = x_start; x >= 0; --x) {
+                int y = s - x; // Calculate y: y = s - x
+                
+                // Check bounds: Ensure the calculated y is within the valid search area [0, yMax-1].
+                if (y < yMax && y >= 0) {
+                    // This is the point where SAD calculation would occur.
+                    // For now, we print the top-left corner coordinate (x, y).
+                    std::cout << "Checking position (x, y): (" << x << ", " << y << ") - Up-Right" << std::endl;
+                }
+            }
+        } else { // Even sum: DOWN-LEFT traversal (x decreases as y increases)
+            
+            // Find the starting y-coordinate for this diagonal.
+            int y_start = std::min(s, yMax - 1);
+            
+            // Inner loop traverses the diagonal by decrementing y.
+            for (int y = y_start; y >= 0; --y) {
+                int x = s - y; // Calculate x: x = s - y
+                
+                // Check bounds: Ensure the calculated x is within the valid search area [0, xMax-1].
+                if (x < xMax && x >= 0) {
+                    // This is the point where SAD calculation would occur.
+                    std::cout << "Checking position (x, y): (" << x << ", " << y << ") - Down-Left" << std::endl;
+                }
+            }
+        }
+    }
+    
+    std::cout << "--------------------------------------" << std::endl;
+    std::cout << "Traversal complete." << std::endl;
+}
+
+int main() {
+    // Example: A typical search area for a block matching algorithm is 8x8 block in a 16x16 frame, 
+    // which results in an 9x9 search space (if search is restricted to the frame).
+    
+    // Let's model a simple 4x4 search space: Frame 5x5, Window 2x2.
+    // xMax = 5 - 2 + 1 = 4. Valid x: 0, 1, 2, 3
+    // yMax = 5 - 2 + 1 = 4. Valid y: 0, 1, 2, 3
+    FrameWindowInfo example = {
+        .frame_width = 5,
+        .frame_height = 5,
+        .window_width = 1,
+        .window_height = 1
+    };
+
+    diagonal_zigzag_traversal(example);
+
+    return 0;
+}

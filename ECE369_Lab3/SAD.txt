@@ -1,0 +1,69 @@
+SAD:
+
+    addi $sp, $sp, -40
+    sw $t0, 40($sp)
+    sw $t1, 36($sp)
+    sw $t2, 32($sp)
+    sw $t3, 28($sp)
+    sw $t4, 24($sp)
+    sw $t5, 20($sp)
+    sw $t6, 16($sp)
+    sw $t7, 12($sp)
+    sw $t8, 8($sp)
+    sw $t9, 4($sp)    
+    
+    add $s, $zero, $zero #sum
+    
+    add $t0, $zero, $zero #i = 0
+
+    sadL1:
+        slt $t2, $t0, $xxxx # i less than window x size
+	beq $t2, $zero, sadOutExit
+        add $t1, $zero, $zero #j = 0
+
+        sadL2:
+            slt $t3, $t1, $yyyy #j less than window y size
+            beq $t3, $zero, sadInExit
+            
+            mul $t9, $t1, $fx    # t9 = j * fileX
+	    add $t9, $t9, $t0    # + i
+            add $t9, $t9, $a1    #add the base address of entire grid
+            lw $t4, $t9
+
+            mul $t9, $t1, $wx    # t9 = j * fileX
+	    add $t9, $t9, $t0    # + i
+            add $t9, $t9, $a1    #add the base address of the target window
+            lw $t5, $t9
+
+            slt $t9, $t4, $t5
+            bne $t9, $zero, sadGT
+
+            sub $t6, $t5, $t4
+            j endGLT
+
+            sadGT:
+                sub $t6, $t4, $t5
+
+            endGLT:
+                add $s0, $t6, $s0
+                j sadL2
+        j sadL1
+
+    sadOutExit:
+        lw $t0, 40($sp)
+        lw $t1, 36($sp)
+        lw $t2, 32($sp)
+        lw $t3, 28($sp)
+        lw $t4, 24($sp)
+        lw $t5, 20($sp)
+        lw $t6, 16($sp)
+        lw $t7, 12($sp)
+        lw $t8, 8($sp)
+        lw $t9, 4($sp)
+        addi $sp, $sp, 40
+            
+
+           
+
+	    
+            
