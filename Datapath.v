@@ -20,12 +20,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Datapath(Clk);
+module Datapath(Clk, Rst);
 
-    input Clk;
+    input Clk, Rst;
 
     wire ClkOut;
-    wire Rst;
+    
 
 //////////////////////////////////////////WIRE DECLARATIONS FOR EACH STAGE////////////////////////////////
 
@@ -76,7 +76,7 @@ module Datapath(Clk);
     wire BranchM;
     wire MemReadM;
     wire MemWriteM;
-    wire ALUZeroM;
+    wire ALU1ZeroM;
     wire [31:0] ReadData2M;
     wire [31:0] ALU1ResultM;
     wire [4:0] RegisterDestinationM;
@@ -92,8 +92,6 @@ module Datapath(Clk);
     wire [31:0] MemOutW;
     wire [4:0] RegisterDestinationW;
     wire [31:0] WriteDataW;
-    
-
    
 
 /////////////////////////       Fetch           //////////////////////////////////////////////////////////
@@ -220,7 +218,7 @@ module Datapath(Clk);
         .ALUControl(ALUOpE),
         .A(ReadData1E),
         .B(ALUIn2),
-        .ALUResult(ALU1RsultE),
+        .ALUResult(ALU1ResultE),
         .Zero(ALU1ZeroE));
     
     
@@ -241,7 +239,7 @@ module Datapath(Clk);
 /////////////////////////       Memory           /////////////////////////////////////////////////////////
 
     //Take from Regiesters of Prevous Stages
-    assign BrancAddressM = EXMEM_BranchAddress;
+    assign BranchAddressM = EXMEM_BranchAddress;
     assign RegWriteM = EXMEM_RegWrite;
     assign BranchM = EXMEM_Branch;
     assign MemReadM = EXMEM_MemRead;
@@ -256,12 +254,12 @@ module Datapath(Clk);
     //Datapath Components for the stage
     And and1(
         .InA(BranchM),
-        .InB(ALUZeroM),
+        .InB(ALU1ZeroM),
         .Out(PCSrcM));
         
     DataMemory DM(
         .Address(ALU1ResultM), 
-        .WriteData(ReadRegister2M), 
+        .WriteData(ReadData2M), 
         .Clk(Clk), 
         .MemWrite(MemWriteM), 
         .MemRead(MemReadM), 
@@ -295,46 +293,88 @@ module Datapath(Clk);
 
 
 //////////////////////////Register Changes///////////////////////////////////////////////////////////////
-    always @(posedge Clk) begin
-        //Fetch Stage to Decode Stage
-        IFID_instruction <= instructionF;
-        IFID_PCAout <= PCAoutF;
+    always @(posedge Clk or posedge Rst) begin
         
-        //Decode Stage to Execute Stage
-        IDEX_PCAout <= PCAoutD;
-        IDEX_instruction <= instructionD;
-        IDEX_RegWrite <= RegWriteD;
-        IDEX_RegDst <= RegDstD;
-        IDEX_ALUSrc <= ALUSrcD;
-        IDEX_ALUOp <= ALUOpD;
-        IDEX_Branch <= BranchD;
-        IDEX_MemWrite <= MemWriteD;
-        IDEX_MemRead <= MemReadD;
-        IDEX_MemToReg <= MemToRegD;
-        IDEX_Offset <= OffsetD;
-        IDEX_ReadData1 <= ReadData1D;
-        IDEX_ReadData2 <= ReadData2D;
+        //check for reset
+        if (Rst) begin
+            IFID_instruction <= 0;
+            IFID_PCAout <= 0;
+            IDEX_PCAout <= 0;
+            IDEX_instruction <= 0;
+            IDEX_RegWrite <= 0;
+            IDEX_RegDst <= 0;
+            IDEX_ALUSrc <= 0;
+            IDEX_ALUOp <= 0;
+            IDEX_Branch <= 0;
+            IDEX_MemWrite <= 0;
+            IDEX_MemRead <= 0;
+            IDEX_MemToReg <= 0;
+            IDEX_Offset <= 0;
+            IDEX_ReadData1 <= 0;
+            IDEX_ReadData2 <= 0;
+            EXMEM_BranchAddress <= 0;
+            EXMEM_RegWrite <= 0;
+            EXMEM_Branch <= 0;
+            EXMEM_MemRead <= 0;
+            EXMEM_MemWrite <= 0;
+            EXMEM_ALU1Result <= 0;
+            EXMEM_RegisterDestination <= 0;
+            EXMEM_ReadData2 <= 0;
+            EXMEM_ALU1Zero <= 0;
+            EXMEM_MemToReg <= 0;
+            MEMWB_RegWrite <= 0;
+            MEMWB_ALU1Result <= 0;
+            MEMWB_MemToReg <= 0;
+            MEMWB_MemOut <= 0;
+            MEMWB_RegisterDestination <= 0;
+        end
         
-        //Execute Stage to Memory Stage
-        EXMEM_BranchAddress <= BranchAddressE;
-        EXMEM_RegWrite <= RegWriteE;
-        EXMEM_Branch <= BranchE;
-        EXMEM_MemRead <= MemReadE;
-        EXMEM_MemWrite <= MemWriteE;
-        EXMEM_ALU1Result <= ALU1ResultE;
-        EXMEM_RegisterDestination <= RegisterDestinationE;
-        EXMEM_ReadData2 <= ReadData2E;
-        EXMEM_ALU1Zero <= ALU1ZeroE;
-        EXMEM_MemToReg <= MemToRegE;
+        else begin
+            //Fetch Stage to Decode Stage
+            IFID_instruction <= instructionF;
+            IFID_PCAout <= PCAoutF;
         
-        //Memory Stage to Write Back Stage
-        MEMWB_RegWrite <= RegWriteM;
-        MEMWB_ALU1Result <= ALU1ResultM;
-        MEMWB_MemToReg <= MemToRegM;
-        MEMWB_MemOut <= MemOutM;
-        MEMWB_RegisterDestination <= RegisterDestinationM;
+            //Decode Stage to Execute Stage
+            IDEX_PCAout <= PCAoutD;
+            IDEX_instruction <= instructionD;
+            IDEX_RegWrite <= RegWriteD;
+            IDEX_RegDst <= RegDstD;
+            IDEX_ALUSrc <= ALUSrcD;
+            IDEX_ALUOp <= ALUOpD;
+            IDEX_Branch <= BranchD;
+            IDEX_MemWrite <= MemWriteD;
+            IDEX_MemRead <= MemReadD;
+            IDEX_MemToReg <= MemToRegD;
+            IDEX_Offset <= OffsetD;
+            IDEX_ReadData1 <= ReadData1D;
+            IDEX_ReadData2 <= ReadData2D;
+        
+            //Execute Stage to Memory Stage
+            EXMEM_BranchAddress <= BranchAddressE;
+            EXMEM_RegWrite <= RegWriteE;
+            EXMEM_Branch <= BranchE;
+            EXMEM_MemRead <= MemReadE;
+            EXMEM_MemWrite <= MemWriteE;
+            EXMEM_ALU1Result <= ALU1ResultE;
+            EXMEM_RegisterDestination <= RegisterDestinationE;
+            EXMEM_ReadData2 <= ReadData2E;
+            EXMEM_ALU1Zero <= ALU1ZeroE;
+            EXMEM_MemToReg <= MemToRegE;
+        
+            //Memory Stage to Write Back Stage
+            MEMWB_RegWrite <= RegWriteM;
+            MEMWB_ALU1Result <= ALU1ResultM;
+            MEMWB_MemToReg <= MemToRegM;
+            MEMWB_MemOut <= MemOutM;
+            MEMWB_RegisterDestination <= RegisterDestinationM;
+        
+        end
  
         
     end
+    
+    
+
+    
 
 endmodule
