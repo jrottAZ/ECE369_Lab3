@@ -53,7 +53,7 @@ module ALU32Bit_tb();
         A = 32'd3; B = 32'd7;
         ALUControl = 4'b0111; #10;
 
-        // Test SLT (A >= B)
+        // Test SLT where (A >= B)
         A = 32'd9; B = 32'd2;
         ALUControl = 4'b0111; #10;
 
