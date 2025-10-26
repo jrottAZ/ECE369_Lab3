@@ -20,10 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg);
+module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg, jump);
     input [5:0] opcode;
     input [5:0] func;
-    output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg;
+    output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg, jump;
     output reg [3:0] ALUOp;
     parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011;
     parameter sw = 6'b101011, lh = 6'b100001, sh = 6'b101001, lb = 6'b100000, sb = 6'b101000;
@@ -40,6 +40,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
         MemWrite  <= 0;
         MemRead <= 0;
         MemToReg   <= 0;
+        jump <= 0;
         
         
         case(opcode)
@@ -306,6 +307,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 Branch <= 1;
                 ALUOp <= 4'b0110;
                 RegDst <= 0;
+                jump <= 1;
             end
             
             jal: begin
@@ -317,6 +319,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 Branch <= 1;
                 ALUOp <= 4'b0110;
                 RegDst <= 0;
+                jump <= 1;
             end
             
             
