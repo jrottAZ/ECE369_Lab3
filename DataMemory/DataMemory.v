@@ -35,12 +35,13 @@
 // of the "Address" input to index any of the 256 words. 
 ////////////////////////////////////////////////////////////////////////////////
 
-module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData); 
+module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, MemSize, ReadData); 
 
     input [31:0] Address; 	// Input Address 
     input [31:0] WriteData; // Data that needs to be written into the address 
     input Clk;
     input MemWrite; 		// Control signal for memory write 
+    input [1:0]  MemSize;   // 00=word, 01=halfword, 10=byte
     input MemRead; 			// Control signal for memory read 
 
     output reg[31:0] ReadData; // Contents of memory location at Address
@@ -57,23 +58,75 @@ module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData);
         end
     end
     
+    wire [1:0] byte_off = Address[1:0];
+    wire [9:0] word_address = Address[11:2];
 //Writing to memory    
-    always @(posedge Clk) begin
-        if(MemWrite)begin
-            Memory[Address[11:2]] <= WriteData;
-        end
-    
+   always @(posedge Clk) begin
+    if (MemWrite) begin
+        case (MemSize)
+            2'b00: begin // store the entire word
+                Memory[word_address] <= WriteData;
+            end
+
+            2'b01: begin // store half word
+                case (Address[1]) // select lower or upper half
+                    1'b0: Memory[word_address][15:0]  <= WriteData[15:0];
+                    1'b1: Memory[word_address][31:16] <= WriteData[15:0];
+                    default: ; // do nothing
+                endcase
+            end
+
+            2'b10: begin // store byte
+                case (Address[1:0]) // 2-bit offset within the word
+                    2'b00: Memory[word_address][7:0]   <= WriteData[7:0];
+                    2'b01: Memory[word_address][15:8]  <= WriteData[7:0];
+                    2'b10: Memory[word_address][23:16] <= WriteData[7:0];
+                    2'b11: Memory[word_address][31:24] <= WriteData[7:0];
+                    default: ; // do nothing
+                endcase
+            end
+
+            default: ; // in case MemSize is something invalid
+        endcase
     end
+end
+
 
 
 //Reading from memory    
-    always @(*) begin
-        if(MemRead) begin
-            ReadData = Memory[Address[11:2]];            
-        end else begin
-            ReadData = 32'b0;
-        end
+    always @(negedge Clk) begin
+        if (MemRead) begin
+            case (MemSize)
+                2'b00: begin // Load Word (LW)
+                    ReadData = Memory[word_address];
+                end
+    
+                2'b01: begin // Load Halfword (LH)
+                    case (Address[1])
+                        1'b0: ReadData = {{16{Memory[word_address][15]}},  Memory[word_address][15:0]};   // sign-extend lower half
+                        1'b1: ReadData = {{16{Memory[word_address][31]}},  Memory[word_address][31:16]};  // sign-extend upper half
+                        default: ReadData = 32'b0;
+                    endcase
+                end
+    
+                2'b10: begin // Load Byte (LB)
+                    case (Address[1:0])
+                        2'b00: ReadData = {{24{Memory[word_address][7]}},   Memory[word_address][7:0]};
+                        2'b01: ReadData = {{24{Memory[word_address][15]}},  Memory[word_address][15:8]};
+                        2'b10: ReadData = {{24{Memory[word_address][23]}},  Memory[word_address][23:16]};
+                        2'b11: ReadData = {{24{Memory[word_address][31]}},  Memory[word_address][31:24]};
+                        default: ReadData = 32'b0;
+                    endcase
+                end
+    
+                default: ReadData = 32'b0; // fallback if MemSize invalid
+            endcase
+            
+            //set everything to zero if nothing is being read
+    end else begin
+        ReadData = 32'b0;
     end
+end
     
     
     
