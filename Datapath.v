@@ -189,7 +189,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] IDEX_Offset;
     reg [31:0] IDEX_ReadData1;
     reg [31:0] IDEX_ReadData2;
-    reg [31:0] IDEX_MemSize;
+    reg [1:0] IDEX_MemSize;
     
     
 
@@ -254,7 +254,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] EXMEM_ALU1Result;
     reg [4:0] EXMEM_RegisterDestination;
     reg EXMEM_MemToReg;
-    reg EXMEM_MemSize;
+    reg [1:0] EXMEM_MemSize;
     
 
 
