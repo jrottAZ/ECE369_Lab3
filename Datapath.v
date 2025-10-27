@@ -53,6 +53,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] OffsetD;
     wire [31:0] jumpAddressD;
     wire jumpD;
+    wire [1:0] MemSizeD;
     
     // Execute wires
     wire [31:0] PCAoutE;
@@ -74,6 +75,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] BranchAddressE;
     wire [31:0] ALU1ResultE;
     wire ALU1ZeroE;
+    wire [1:0] MemSizeE;
     
     // Memory wires
     wire RegWriteM;
@@ -88,6 +90,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] MemOutM;
     wire PCSrcM;
     wire [31:0] BranchAddressM;
+    wire [1:0] MemSizeM;
     
     // Write Back wires
     wire RegWriteW;
@@ -150,7 +153,8 @@ module Datapath(Clk, Rst, ALUOut);
         .Branch(BranchD), 
         .MemWrite(MemWriteD), 
         .MemRead(MemReadD), 
-        .MemToReg(MemToRegD));
+        .MemToReg(MemToRegD),
+        .MemSize(MemSizeD));
                
     RegisterFile rf(
         .ReadRegister1(instructionD[25:21]),
@@ -185,6 +189,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] IDEX_Offset;
     reg [31:0] IDEX_ReadData1;
     reg [31:0] IDEX_ReadData2;
+    reg [31:0] IDEX_MemSize;
     
     
 
@@ -204,6 +209,7 @@ module Datapath(Clk, Rst, ALUOut);
     assign OffsetE = IDEX_Offset;
     assign ReadData1E = IDEX_ReadData1;
     assign ReadData2E = IDEX_ReadData2;
+    assign MemSizeE = IDEX_MemSize;
     
     //Datapath Components for the stage
     
@@ -248,6 +254,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] EXMEM_ALU1Result;
     reg [4:0] EXMEM_RegisterDestination;
     reg EXMEM_MemToReg;
+    reg EXMEM_MemSize;
     
 
 
@@ -264,6 +271,7 @@ module Datapath(Clk, Rst, ALUOut);
     assign ALU1ResultM = EXMEM_ALU1Result;
     assign RegisterDestinationM = EXMEM_RegisterDestination;
     assign MemToRegM = EXMEM_MemToReg;
+    assign MemSizeM = EXMEM_MemSize;
     
     
     //Datapath Components for the stage
@@ -277,7 +285,8 @@ module Datapath(Clk, Rst, ALUOut);
         .WriteData(ReadData2M), 
         .Clk(Clk), 
         .MemWrite(MemWriteM), 
-        .MemRead(MemReadM), 
+        .MemRead(MemReadM),
+        .MemSize(MemSizeM), 
         .ReadData(MemOutM));
     
     //Declare registers for between stages
@@ -363,6 +372,7 @@ module Datapath(Clk, Rst, ALUOut);
             IDEX_Offset <= OffsetD;
             IDEX_ReadData1 <= ReadData1D;
             IDEX_ReadData2 <= ReadData2D;
+            IDEX_MemSize <= MemSizeD;
         
             //Execute Stage to Memory Stage
             EXMEM_BranchAddress <= BranchAddressE;
@@ -375,6 +385,7 @@ module Datapath(Clk, Rst, ALUOut);
             EXMEM_ReadData2 <= ReadData2E;
             EXMEM_ALU1Zero <= ALU1ZeroE;
             EXMEM_MemToReg <= MemToRegE;
+            EXMEM_MemSize <= MemSizeE;
         
             //Memory Stage to Write Back Stage
             MEMWB_RegWrite <= RegWriteM;
