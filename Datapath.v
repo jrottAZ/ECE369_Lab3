@@ -32,6 +32,7 @@ module Datapath(Clk, Rst, ALUOut);
 
     // Fetch wires 
     wire [31:0] PCin;
+    wire [31:0] PCinpreJump;
     wire [31:0] PCout;
     wire [31:0] instructionF;
     wire [31:0] PCAoutF;
@@ -50,6 +51,8 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] ReadData1D;
     wire [31:0] ReadData2D;
     wire [31:0] OffsetD;
+    wire [31:0] jumpAddressD;
+    wire jumpD;
     
     // Execute wires
     wire [31:0] PCAoutE;
@@ -99,10 +102,16 @@ module Datapath(Clk, Rst, ALUOut);
     
     //Datapath Components for the stage
     Mux32Bit2To1 muxPCInput(
-        .out(PCin),
+        .out(PCinpreJump),
         .inA(PCAoutF), 
         .inB(BranchAddressM), 
         .sel(PCSrcM));
+        
+    Mux32Bit2To1 muxJump(
+        .out(PCin), 
+        .inA(PCinpreJump), 
+        .inB(jumpAddressD), 
+        .sel(jumpD));
     
     ProgramCounter pc(
         .Address(PCin),
@@ -156,6 +165,11 @@ module Datapath(Clk, Rst, ALUOut);
     SignExtension se(
         .in(instructionD[15:0]),
         .out(OffsetD));
+        
+    ShiftLeft jumpShift(
+        .InA({6'b0, instructionD}), 
+        .shamt(32'd2), 
+        .Out(jumpAddressD));
         
     //Declare registers for between stages
     reg [31:0] IDEX_PCAout;
