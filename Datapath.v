@@ -171,7 +171,7 @@ module Datapath(Clk, Rst, ALUOut);
         .out(OffsetD));
         
     ShiftLeft jumpShift(
-        .InA({6'b0, instructionD}), 
+        .InA({6'b0, instructionD[25:0]}), 
         .shamt(32'd2), 
         .Out(jumpAddressD));
         
