@@ -26,7 +26,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
     output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg, jump;
     output reg [3:0] ALUOp;
     output reg [1:0] MemSize;
-    parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011;
+    parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011, mul = 6'b011100;
     parameter sw = 6'b101011, lh = 6'b100001, sh = 6'b101001, lb = 6'b100000, sb = 6'b101000;
     parameter andi = 6'b001100, ori = 6'b001101, xori = 6'b001110, beq = 6'b000100, bne = 6'b000101;
     parameter bg = 6'b000001, bgtz = 6'b000111, blez = 6'b000110, j = 6'b000010, jal = 6'b000011;
@@ -109,6 +109,17 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                     end
                 
                 endcase
+            end
+            
+            mul: begin
+                RegWrite <= 1;
+                MemWrite <= 0;
+                MemRead <= 0;
+                MemToReg <= 1;
+                ALUSrc <= 0;
+                Branch <= 0;
+                RegDst <= 1;
+                ALUOp <= 4'b1110;
             end
             
             addi: begin
