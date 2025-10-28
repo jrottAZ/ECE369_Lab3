@@ -54,6 +54,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] jumpAddressD;
     wire jumpD;
     wire [1:0] MemSizeD;
+    wire branchTypeD;
     
     // Execute wires
     wire [31:0] PCAoutE;
@@ -76,6 +77,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] ALU1ResultE;
     wire ALU1ZeroE;
     wire [1:0] MemSizeE;
+    wire branchTypeE;
     
     // Memory wires
     wire RegWriteM;
@@ -83,6 +85,9 @@ module Datapath(Clk, Rst, ALUOut);
     wire MemReadM;
     wire MemWriteM;
     wire ALU1ZeroM;
+    wire ALU1ZeroOut;
+    wire NotALU1Zero;
+    wire branchTypeM;
     wire [31:0] ReadData2M;
     wire [31:0] ALU1ResultM;
     wire [4:0] RegisterDestinationM;
@@ -154,7 +159,9 @@ module Datapath(Clk, Rst, ALUOut);
         .MemWrite(MemWriteD), 
         .MemRead(MemReadD), 
         .MemToReg(MemToRegD),
-        .MemSize(MemSizeD));
+        .MemSize(MemSizeD),
+        .jump(jumpD),
+        .branchType(branchTypeD));
                
     RegisterFile rf(
         .ReadRegister1(instructionD[25:21]),
@@ -190,6 +197,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] IDEX_ReadData1;
     reg [31:0] IDEX_ReadData2;
     reg [1:0] IDEX_MemSize;
+    reg IDEX_branchType;
     
     
 
@@ -210,6 +218,7 @@ module Datapath(Clk, Rst, ALUOut);
     assign ReadData1E = IDEX_ReadData1;
     assign ReadData2E = IDEX_ReadData2;
     assign MemSizeE = IDEX_MemSize;
+    assign branchTypeE = IDEX_branchType;
     
     //Datapath Components for the stage
     
@@ -255,6 +264,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [4:0] EXMEM_RegisterDestination;
     reg EXMEM_MemToReg;
     reg [1:0] EXMEM_MemSize;
+    reg EXMEM_branchType;
     
 
 
@@ -264,6 +274,7 @@ module Datapath(Clk, Rst, ALUOut);
     assign BranchAddressM = EXMEM_BranchAddress;
     assign RegWriteM = EXMEM_RegWrite;
     assign BranchM = EXMEM_Branch;
+    assign NotALU1Zero = ~EXMEM_ALU1Zero;
     assign MemReadM = EXMEM_MemRead;
     assign MemWriteM = EXMEM_MemWrite;
     assign ALU1ZeroM = EXMEM_ALU1Zero;
@@ -272,12 +283,19 @@ module Datapath(Clk, Rst, ALUOut);
     assign RegisterDestinationM = EXMEM_RegisterDestination;
     assign MemToRegM = EXMEM_MemToReg;
     assign MemSizeM = EXMEM_MemSize;
+    assign branchTypeM = EXMEM_branchType;
     
     
     //Datapath Components for the stage
+    Mux32Bit2To1 beqOrBne(
+        .out(ALU1ZeroOut), 
+        .inA(ALU1ZeroM), 
+        .inB(NotALU1Zero), 
+        .sel(branchTypeM));
+        
     And and1(
         .InA(BranchM),
-        .InB(ALU1ZeroM),
+        .InB(ALU1ZeroOut),
         .Out(PCSrcM));
         
     DataMemory DM(
@@ -373,6 +391,7 @@ module Datapath(Clk, Rst, ALUOut);
             IDEX_ReadData1 <= ReadData1D;
             IDEX_ReadData2 <= ReadData2D;
             IDEX_MemSize <= MemSizeD;
+            IDEX_branchType <= branchTypeD;
         
             //Execute Stage to Memory Stage
             EXMEM_BranchAddress <= BranchAddressE;
@@ -386,6 +405,7 @@ module Datapath(Clk, Rst, ALUOut);
             EXMEM_ALU1Zero <= ALU1ZeroE;
             EXMEM_MemToReg <= MemToRegE;
             EXMEM_MemSize <= MemSizeE;
+            EXMEM_branchType <= branchTypeE;
         
             //Memory Stage to Write Back Stage
             MEMWB_RegWrite <= RegWriteM;
