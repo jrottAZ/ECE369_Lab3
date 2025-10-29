@@ -20,10 +20,11 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg, jump, MemSize, branchType);
+module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg, jump, MemSize, branchType, JorJR, Jal);
     input [5:0] opcode;
     input [5:0] func;
-    output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg, jump, branchType;
+    input [4:0] rtField;
+    output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg, jump, branchType, JorJR, Jal;
     output reg [3:0] ALUOp;
     output reg [1:0] MemSize;
     parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011, mul = 6'b011100;
@@ -36,7 +37,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
         RegWrite   <= 0;
         RegDst   <= 0;
         ALUSrc <= 0;
-        ALUOp    <= 4'b1111;
+        ALUOp    <= 4'b0000;
         Branch <= 0;
         MemWrite  <= 0;
         MemRead <= 0;
@@ -44,12 +45,13 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
         jump <= 0;
         MemSize <= 2'b00;
         branchType <= 0;
+        JorJR <= 0;
+        Jal <= 0;
         
         
         case(opcode)
     
             rType: begin
-                RegWrite <= 1;
                 MemWrite <= 0;
                 MemRead <= 0;
                 MemToReg <= 1;
@@ -61,52 +63,62 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                     //ADD
                     6'b100000: begin
                         ALUOp <= 4'b0010;
+                        RegWrite <= 1;
                     end
                     
                     //SUB
                     6'b100010: begin
                         ALUOp <= 4'b0011;
+                        RegWrite <= 1;
                     end
                     
                     //SLT
                     6'b101010: begin
                         ALUOp <= 4'b0100;
+                        RegWrite <= 1;
                     end
                     
                     //AND
                     6'b100100: begin
                         ALUOp <= 4'b0000;
+                        RegWrite <= 1;
                     end
                     
                     //OR
                     6'b100101: begin
                         ALUOp <= 4'b0001;
+                        RegWrite <= 1;
                     end
                     
                     //NOR
                     6'b100111: begin
                         ALUOp <= 4'b0101;
+                        RegWrite <= 1;
                     end
                     
                     //XOR
                     6'b100110: begin
                         ALUOp <= 4'b1010;
+                        RegWrite <= 1;
                     end
                     
                     //SRL
                     6'b000010: begin
                         ALUOp <= 4'b1001;
+                        RegWrite <= 1;
                     end
                     
                     //SLL
                     6'b000000: begin
                         ALUOp <= 4'b1000;
+                        RegWrite <= 1;
                     end
                     
                     //JR
-                    6'b000000: begin
-                    //////////////////////////////Needs to be implemented to the ALU
-                        ALUOp <= 4'b01;
+                    6'b001000: begin
+                        RegWrite <= 0;
+                        jump <= 1;
+                        JorJR <= 1;
                     end
                 
                 endcase
@@ -120,7 +132,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 ALUSrc <= 0;
                 Branch <= 0;
                 RegDst <= 1;
-                ALUOp <= 4'b1110;
+                ALUOp <= 4'b1111;
             end
             
             addi: begin
@@ -166,7 +178,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 ALUOp <= 4'b0010;
                 RegDst <= 0;
             end
-/////////////////////////NEED TO IMPLEMENT THESE CORRECTLY////////////////////////////
+
             lh: begin
                 RegWrite <= 1;
                 MemWrite <= 0;
@@ -214,7 +226,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 RegDst <= 0;
                 MemSize <= 2'b10;
             end
-////////////////////////////////////////////////////////////////////////////////////////          
+        
            andi: begin
                 RegWrite <= 1;
                 MemWrite <= 0;
@@ -255,7 +267,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b0110;
+                ALUOp <= 4'b0011;
                 RegDst <= 0;
             end
             
@@ -266,7 +278,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b0110;
+                ALUOp <= 4'b0011;
                 RegDst <= 0;
                 branchType <= 1;
             end
@@ -280,15 +292,15 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 Branch <= 1;
                 RegDst <= 0;
                 
-                case(func)
+                case(rtField)
                 
                     //BGEZ
-                    6'b000001: begin
+                    5'b00001: begin
                         ALUOp <= 4'b1100; 
                     end
                     
                     //BLTZ
-                    6'b000000: begin
+                    5'b00000: begin
                         ALUOp <= 4'b1011;
                     end
                 
@@ -302,7 +314,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b1101;
+                ALUOp <= 4'b1110;
                 RegDst <= 0;
             end
             
@@ -313,7 +325,7 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemToReg <= 0;
                 ALUSrc <= 0;
                 Branch <= 1;
-                ALUOp <= 4'b1100;
+                ALUOp <= 4'b1101;
                 RegDst <= 0;
             end
             
@@ -323,22 +335,23 @@ module controller(opcode, func, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrit
                 MemRead <= 0;
                 MemToReg <= 0;
                 ALUSrc <= 0;
-                Branch <= 1;
+                Branch <= 0;
                 ALUOp <= 4'b0110;
                 RegDst <= 0;
                 jump <= 1;
             end
             
             jal: begin
-                RegWrite <= 0;
+                RegWrite <= 1;
                 MemWrite <= 0;
                 MemRead <= 0;
                 MemToReg <= 0;
                 ALUSrc <= 0;
-                Branch <= 1;
+                Branch <= 0;
                 ALUOp <= 4'b0110;
                 RegDst <= 0;
                 jump <= 1;
+                Jal <= 1;
             end
             
             
