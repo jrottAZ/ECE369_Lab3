@@ -62,7 +62,15 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
             4'b1100: ALUResult <= (A >= 0) ? 32'b0 : 32'b1; //LTZ
             4'b1101: ALUResult <= (A > 0) ? 32'b1 : 32'b0;  //GTZ
             4'b1110: ALUResult <= (A > 0) ? 32'b0 : 32'b1;  //LTEZ
+<<<<<<< Updated upstream
             4'b1111: ALUResult <= multOutput[31:0];     //MULT
+=======
+<<<<<<< HEAD
+            4'b1111: ALUResult <= multOutput[31:0];         //MULT
+=======
+            4'b1111: ALUResult <= multOutput[31:0];     //MULT
+>>>>>>> 4a30d16c164a3b7e33aa7a1510e7caf4f2f9a674
+>>>>>>> Stashed changes
             
             default: ALUResult <= 32'b1;                    // default safe value
         endcase
