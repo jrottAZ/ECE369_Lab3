@@ -35,13 +35,12 @@
 // of the "Address" input to index any of the 256 words. 
 ////////////////////////////////////////////////////////////////////////////////
 
-module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, MemSize, ReadData); 
+module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData); 
 
     input [31:0] Address; 	// Input Address 
     input [31:0] WriteData; // Data that needs to be written into the address 
     input Clk;
     input MemWrite; 		// Control signal for memory write 
-    input [1:0]  MemSize;   // 00=word, 01=halfword, 10=byte
     input MemRead; 			// Control signal for memory read 
 
     output reg[31:0] ReadData; // Contents of memory location at Address
@@ -63,7 +62,7 @@ module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, MemSize, ReadData)
 //Writing to memory    
    always @(posedge Clk) begin
     if (MemWrite) begin
-        case (MemSize)
+        case (byte_off)
             2'b00: begin // store the entire word
                 Memory[word_address] <= WriteData;
             end
@@ -96,7 +95,7 @@ end
 //Reading from memory    
     always @(negedge Clk) begin
         if (MemRead) begin
-            case (MemSize)
+            case (byte_off)
                 2'b00: begin // Load Word (LW)
                     ReadData = Memory[word_address];
                 end
@@ -119,7 +118,7 @@ end
                     endcase
                 end
     
-                default: ReadData = 32'b0; // fallback if MemSize invalid
+                //default: ReadData = 32'b0; // fallback if MemSize invalid
             endcase
             
             //set everything to zero if nothing is being read

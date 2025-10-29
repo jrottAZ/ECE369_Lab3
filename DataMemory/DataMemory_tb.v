@@ -1,124 +1,111 @@
 `timescale 1ns / 1ps
 
-////////////////////////////////////////////////////////////////////////////////
-// ECE369 - Computer Architecture
-// 
-// Module - DataMemory_tb.v
-// Description - Comprehensive testbench for 'DataMemory.v'
-////////////////////////////////////////////////////////////////////////////////
+module DataMemory_tb();
 
-module DataMemory_tb(); 
+    reg [31:0] Address;
+    reg [31:0] WriteData;
+    reg Clk;
+    reg MemWrite;
+    reg MemRead;
 
-    reg     [31:0]  Address;
-    reg     [31:0]  WriteData;
-    reg             Clk;
-    reg             MemWrite;
-    reg             MemRead;
-    reg     [1:0]   MemSize;
-    wire    [31:0]  ReadData;
+    wire [31:0] ReadData;
 
-    // Instantiate DataMemory
-    DataMemory uut(
-        .Address(Address), 
-        .WriteData(WriteData), 
-        .Clk(Clk), 
-        .MemWrite(MemWrite), 
-        .MemRead(MemRead), 
-        .MemSize(MemSize),
+    // Instantiate the memory module
+    DataMemory u0(
+        .Address(Address),
+        .WriteData(WriteData),
+        .Clk(Clk),
+        .MemWrite(MemWrite),
+        .MemRead(MemRead),
         .ReadData(ReadData)
-    ); 
+    );
 
-    // Clock generation
+    // Clock generator
     initial begin
-        Clk = 0;
+        Clk = 1'b0;
         forever #10 Clk = ~Clk;
     end
 
-    // Helper task for display
-    task show_op;
-        input [127:0] op_name;
+    // Task to perform a write and show what happens
+    task write_mem;
         input [31:0] addr;
-        input [31:0] wdata;
-        input [31:0] rdata;
-        input [1:0]  size;
+        input [31:0] data;
         begin
-            $display("Time=%0t | %-8s | Addr=0x%08h (%0d) | Size=%s | WriteData=0x%08h | ReadData=0x%08h (%0d)",
-                $time, op_name, addr, addr,
-                (size==2'b00) ? "WORD" :
-                (size==2'b01) ? "HALF" :
-                (size==2'b10) ? "BYTE" : "UNK",
-                wdata, rdata, rdata);
+            @(posedge Clk);
+            Address = addr;
+            WriteData = data;
+            MemWrite = 1;
+            MemRead  = 0;
+            #40
+            @(posedge Clk);  // perform the write
+            MemWrite = 0;
+            #1;
+            $display("[WRITE] @%0t | Addr=0x%0h | Data=0x%08h | MemSize=%b | Mem[%0d]=0x%08h",
+                     $time, addr, data, addr[11:10], addr[9:2], u0.Memory[addr[9:2]]);
         end
     endtask
 
+    // Task to perform a read and show what happens
+    task read_mem;
+        input [31:0] addr;
+        begin
+            @(negedge Clk);
+            Address = addr;
+            MemWrite = 0;
+            MemRead  = 1;
+            #40
+            @(negedge Clk);
+            #1;
+            $display("[READ ] @%0t | Addr=0x%0h | MemSize=%b | ReadData=0x%08h | Mem[%0d]=0x%08h",
+                     $time, addr, addr[11:10], ReadData, addr[9:2], u0.Memory[addr[9:2]]);
+            @(posedge Clk);
+            MemRead = 0;
+        end
+    endtask
+
+    // Main stimulus
     initial begin
-        $display("\n=== Starting DataMemory Comprehensive Testbench ===\n");
-
         // Initialize
-        Address = 0; WriteData = 0;
-        MemWrite = 0; MemRead = 0; MemSize = 2'b00;
-        #20;
+        Address   = 32'b0;
+        WriteData = 0;
+        MemWrite  = 0;
+        MemRead   = 0;
 
-        // --- Test 1: Store Word ---
-        Address = 32'd100;
-        WriteData = 32'h12345678;
-        MemSize = 2'b00; // word
-        MemWrite = 1; MemRead = 0;
-        @(posedge Clk);
-        MemWrite = 0;
-        #1 show_op("WRITE", Address, WriteData, 0, MemSize);
+        #25;
 
-        // --- Test 2: Read Word ---
-        MemRead = 1;
-        @(negedge Clk);
-        #1 show_op("READ", Address, WriteData, ReadData, MemSize);
-        MemRead = 0;
+        $display("\n=== Starting Data Memory Test ===\n");
 
-        // --- Test 3: Store Halfword (lower half) ---
-        Address = 32'd104;
-        WriteData = 32'h0000ABCD;
-        MemSize = 2'b01;
-        MemWrite = 1;
-        @(posedge Clk);
-        MemWrite = 0;
-        #1 show_op("WRITE", Address, WriteData, 0, MemSize);
+        // Test 1: Write full word
+        write_mem(32'd100, 32'hAABBCCDD);
+        #40;
+        read_mem(32'd100);
 
-        // --- Test 4: Read Halfword (lower) ---
-        MemRead = 1;
-        @(negedge Clk);
-        #1 show_op("READ", Address, WriteData, ReadData, MemSize);
-        MemRead = 0;
+        // Test 2: Write halfword (lower half)
+        write_mem(32'h105, 32'h67671234);
+        #40;
+        read_mem(32'h105);
+        
+        //Test 3: Write halfword (upper half)
+        write_mem(32'h106, 32'h12345678);
+        #40;
+        read_mem(32'h106);
 
-        // --- Test 5: Store Byte ---
-        Address = 32'd108;
-        WriteData = 32'h000000EF;
-        MemSize = 2'b10;
-        MemWrite = 1;
-        @(posedge Clk);
-        MemWrite = 0;
-        #1 show_op("WRITE", Address, WriteData, 0, MemSize);
+        // Test 3: Write byte (upper byte)
+        write_mem(32'd108, 32'h676700FF);
+        #40;
+        read_mem(32'd108);
 
-        // --- Test 6: Read Byte ---
-        MemRead = 1;
-        @(negedge Clk);
-        #1 show_op("READ", Address, WriteData, ReadData, MemSize);
-        MemRead = 0;
+        // Test 4: Write full word again
+        write_mem(32'd112, 32'h12345678);
+        #40;
+        read_mem(32'd112);
 
-        // --- Test 7: Multiple words ---
-        Address = 32'd112; WriteData = 32'hCAFEBABE;
-        MemSize = 2'b00; MemWrite = 1;
-        @(posedge Clk);
-        MemWrite = 0;
-        #1 show_op("WRITE", Address, WriteData, 0, MemSize);
+        
 
-        MemRead = 1;
-        @(negedge Clk);
-        #1 show_op("READ", Address, WriteData, ReadData, MemSize);
-        MemRead = 0;
-
-        #20;
-        $display("\n=== DataMemory Testbench Completed ===\n");
-        $finish;
+        $display("\n=== Test Complete ===\n");
+        #50;
+        $stop;
+        
     end
 
 endmodule
