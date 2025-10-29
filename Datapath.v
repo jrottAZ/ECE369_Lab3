@@ -383,8 +383,11 @@ module Datapath(Clk, Rst, Write_Data);
         
         //check for reset
         if (Rst) begin
+            //Fetch Stage to Decode Stage
             IFID_instruction <= 0;
             IFID_PCAout <= 0;
+        
+            //Decode Stage to Execute Stage
             IDEX_PCAout <= 0;
             IDEX_instruction <= 0;
             IDEX_RegWrite <= 0;
@@ -398,6 +401,12 @@ module Datapath(Clk, Rst, Write_Data);
             IDEX_Offset <= 0;
             IDEX_ReadData1 <= 0;
             IDEX_ReadData2 <= 0;
+            IDEX_MemSize <= 0;
+            IDEX_branchType <= 0;
+            IDEX_Jal <= 0;
+        
+            //Execute Stage to Memory Stage
+            EXMEM_PCAout <= 0;
             EXMEM_BranchAddress <= 0;
             EXMEM_RegWrite <= 0;
             EXMEM_Branch <= 0;
@@ -408,11 +417,18 @@ module Datapath(Clk, Rst, Write_Data);
             EXMEM_ReadData2 <= 0;
             EXMEM_ALU1Zero <= 0;
             EXMEM_MemToReg <= 0;
+            EXMEM_MemSize <= 0;
+            EXMEM_branchType <= 0;
+            EXMEM_Jal <= 0;
+        
+            //Memory Stage to Write Back Stage
+            MEMWB_PCAout <= 0;
             MEMWB_RegWrite <= 0;
             MEMWB_ALU1Result <= 0;
             MEMWB_MemToReg <= 0;
             MEMWB_MemOut <= 0;
             MEMWB_RegisterDestination <= 0;
+            MEMWB_Jal <= 0;
         end
         
         else begin
@@ -470,7 +486,7 @@ module Datapath(Clk, Rst, Write_Data);
     
     
     ///////////for testing/////
-    assign Write_Data = WriteDataW;
+    assign Write_Data = WriteData1;
     
 
     
