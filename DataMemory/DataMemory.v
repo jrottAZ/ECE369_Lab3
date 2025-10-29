@@ -55,8 +55,11 @@ module DataMemory(Address, WriteData, Clk, MemWrite, MemRead, ReadData);
         for (i = 0; i < 1024; i = i + 1) begin
             Memory[i] = 32'b0;
         end
+        $readmemh("datamem.mem", Memory);
+
     end
     
+   
     wire [1:0] byte_off = Address[1:0];
     wire [9:0] word_address = Address[11:2];
 //Writing to memory    

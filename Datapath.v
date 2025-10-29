@@ -20,10 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Datapath(Clk, Rst, ALUOut);
+module Datapath(Clk, Rst, Write_Data);
 
     input Clk, Rst;
-    output [31:0] ALUOut;
+    output [31:0] Write_Data;
 
     wire ClkOut;
     
@@ -52,9 +52,12 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] ReadData2D;
     wire [31:0] OffsetD;
     wire [31:0] jumpAddressD;
+    wire [31:0] jumpAddress1D;
     wire jumpD;
     wire [1:0] MemSizeD;
     wire branchTypeD;
+    wire JorJRD;
+    wire JalD;
     
     // Execute wires
     wire [31:0] PCAoutE;
@@ -72,14 +75,17 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] ReadData2E;
     wire [31:0] ALUIn2;
     wire [4:0] RegisterDestinationE;
+    wire [4:0] RegisterDestination1;
     wire [31:0] ShiftedOffset;
     wire [31:0] BranchAddressE;
     wire [31:0] ALU1ResultE;
     wire ALU1ZeroE;
     wire [1:0] MemSizeE;
     wire branchTypeE;
+    wire JalE;
     
     // Memory wires
+    wire [31:0] PCAoutM;
     wire RegWriteM;
     wire BranchM;
     wire MemReadM;
@@ -96,14 +102,19 @@ module Datapath(Clk, Rst, ALUOut);
     wire PCSrcM;
     wire [31:0] BranchAddressM;
     wire [1:0] MemSizeM;
+    wire JalM;
+    wire [31:0] tempOut;
     
     // Write Back wires
+    wire [31:0] PCAoutW;
     wire RegWriteW;
     wire [31:0] ALU1ResultW;
     wire MemToRegW;
     wire [31:0] MemOutW;
     wire [4:0] RegisterDestinationW;
     wire [31:0] WriteDataW;
+    wire JalW;
+    wire [31:0] WriteData1;
    
 
 /////////////////////////       Fetch           //////////////////////////////////////////////////////////
@@ -150,7 +161,8 @@ module Datapath(Clk, Rst, ALUOut);
     //Datapath Components for the stage
     controller cont(
         .opcode(instructionD[31:26]), 
-        .func(instructionD[5:0]), 
+        .func(instructionD[5:0]),
+        .rtField(instructionD[20:16]), 
         .RegWrite(RegWriteD),
         .RegDst(RegDstD),
         .ALUSrc(ALUSrcD), 
@@ -161,7 +173,9 @@ module Datapath(Clk, Rst, ALUOut);
         .MemToReg(MemToRegD),
         .MemSize(MemSizeD),
         .jump(jumpD),
-        .branchType(branchTypeD));
+        .branchType(branchTypeD),
+        .JorJR(JorJRD),
+        .Jal(JalD));
                
     RegisterFile rf(
         .ReadRegister1(instructionD[25:21]),
@@ -178,9 +192,15 @@ module Datapath(Clk, Rst, ALUOut);
         .out(OffsetD));
         
     ShiftLeft jumpShift(
-        .InA({6'b0, instructionD[25:0]}), 
+        .InA(jumpAddress1D), 
         .shamt(32'd2), 
         .Out(jumpAddressD));
+    
+    Mux32Bit2To1 jorjr(
+        .out(jumpAddress1D),
+        .inA({6'b0, instructionD[25:0]}), 
+        .inB(ReadData1D), 
+        .sel(JorJRD));
         
     //Declare registers for between stages
     reg [31:0] IDEX_PCAout;
@@ -198,6 +218,7 @@ module Datapath(Clk, Rst, ALUOut);
     reg [31:0] IDEX_ReadData2;
     reg [1:0] IDEX_MemSize;
     reg IDEX_branchType;
+    reg IDEX_Jal;
     
     
 
@@ -219,6 +240,7 @@ module Datapath(Clk, Rst, ALUOut);
     assign ReadData2E = IDEX_ReadData2;
     assign MemSizeE = IDEX_MemSize;
     assign branchTypeE = IDEX_branchType;
+    assign JalE = IDEX_Jal;
     
     //Datapath Components for the stage
     
@@ -229,10 +251,16 @@ module Datapath(Clk, Rst, ALUOut);
         .sel(ALUSrcE));
         
     Mux5Bit2To1 muxRegDst(
-        .out(RegisterDestinationE),
+        .out(RegisterDestination1),
         .inA(instructionE[20:16]),
         .inB(instructionE[15:11]),
         .sel(RegDstE));
+        
+    Mux5Bit2To1 jalDst(
+        .out(RegisterDestinationE),
+        .inA(RegisterDestination1),
+        .inB(5'd31), //$ra
+        .sel(JalE));
         
     ShiftLeft offsetShift(
         .InA(OffsetE),
@@ -248,11 +276,13 @@ module Datapath(Clk, Rst, ALUOut);
         .ALUControl(ALUOpE),
         .A(ReadData1E),
         .B(ALUIn2),
+        .shamt(instructionE[10:6]),
         .ALUResult(ALU1ResultE),
         .Zero(ALU1ZeroE));
     
     
     //Declare registers for between stages
+    reg [31:0] EXMEM_PCAout;
     reg [31:0] EXMEM_BranchAddress;
     reg EXMEM_RegWrite;
     reg EXMEM_Branch;
@@ -265,12 +295,14 @@ module Datapath(Clk, Rst, ALUOut);
     reg EXMEM_MemToReg;
     reg [1:0] EXMEM_MemSize;
     reg EXMEM_branchType;
+    reg EXMEM_Jal;
     
 
 
 /////////////////////////       Memory           /////////////////////////////////////////////////////////
 
     //Take from Regiesters of Prevous Stages
+    assign PCAoutM = EXMEM_PCAout;
     assign BranchAddressM = EXMEM_BranchAddress;
     assign RegWriteM = EXMEM_RegWrite;
     assign BranchM = EXMEM_Branch;
@@ -284,11 +316,13 @@ module Datapath(Clk, Rst, ALUOut);
     assign MemToRegM = EXMEM_MemToReg;
     assign MemSizeM = EXMEM_MemSize;
     assign branchTypeM = EXMEM_branchType;
+    assign JalM = EXMEM_Jal;
+    assign ALU1ZeroOut = tempOut[0:0];
     
     
     //Datapath Components for the stage
     Mux32Bit2To1 beqOrBne(
-        .out(ALU1ZeroOut), 
+        .out(tempOut), 
         .inA(ALU1ZeroM), 
         .inB(NotALU1Zero), 
         .sel(branchTypeM));
@@ -308,28 +342,38 @@ module Datapath(Clk, Rst, ALUOut);
         .ReadData(MemOutM));
     
     //Declare registers for between stages
+    reg [31:0] MEMWB_PCAout;
     reg MEMWB_RegWrite;
     reg [31:0] MEMWB_ALU1Result;
     reg MEMWB_MemToReg;
     reg [31:0] MEMWB_MemOut;
     reg [4:0] MEMWB_RegisterDestination;
+    reg MEMWB_Jal;
     
     
 /////////////////////////       WriteBack           //////////////////////////////////////////////////////
 
     //Take from Regiesters of Prevous Stages
+    assign PCAoutW = MEMWB_PCAout;
     assign RegWriteW = MEMWB_RegWrite;
     assign ALU1ResultW = MEMWB_ALU1Result;
     assign MemToRegW = MEMWB_MemToReg;
     assign MemOutW = MEMWB_MemOut;
     assign RegisterDestinationW = MEMWB_RegisterDestination;
+    assign JalW = MEMWB_Jal;
     
     //Datapath Components for the stage
     Mux32Bit2To1 muxWriteBack(
-        .out(WriteDataW), 
+        .out(WriteData1), 
         .inA(MemOutW), 
         .inB(ALU1ResultW), 
         .sel(MemToRegW));
+        
+    Mux32Bit2To1 checkForJal(
+        .out(WriteDataW), 
+        .inA(WriteData1), 
+        .inB(PCAoutW), 
+        .sel(JalW));
     
     //Declare registers for between stages
 
@@ -339,8 +383,11 @@ module Datapath(Clk, Rst, ALUOut);
         
         //check for reset
         if (Rst) begin
+            //Fetch Stage to Decode Stage
             IFID_instruction <= 0;
             IFID_PCAout <= 0;
+        
+            //Decode Stage to Execute Stage
             IDEX_PCAout <= 0;
             IDEX_instruction <= 0;
             IDEX_RegWrite <= 0;
@@ -354,6 +401,12 @@ module Datapath(Clk, Rst, ALUOut);
             IDEX_Offset <= 0;
             IDEX_ReadData1 <= 0;
             IDEX_ReadData2 <= 0;
+            IDEX_MemSize <= 0;
+            IDEX_branchType <= 0;
+            IDEX_Jal <= 0;
+        
+            //Execute Stage to Memory Stage
+            EXMEM_PCAout <= 0;
             EXMEM_BranchAddress <= 0;
             EXMEM_RegWrite <= 0;
             EXMEM_Branch <= 0;
@@ -364,11 +417,18 @@ module Datapath(Clk, Rst, ALUOut);
             EXMEM_ReadData2 <= 0;
             EXMEM_ALU1Zero <= 0;
             EXMEM_MemToReg <= 0;
+            EXMEM_MemSize <= 0;
+            EXMEM_branchType <= 0;
+            EXMEM_Jal <= 0;
+        
+            //Memory Stage to Write Back Stage
+            MEMWB_PCAout <= 0;
             MEMWB_RegWrite <= 0;
             MEMWB_ALU1Result <= 0;
             MEMWB_MemToReg <= 0;
             MEMWB_MemOut <= 0;
             MEMWB_RegisterDestination <= 0;
+            MEMWB_Jal <= 0;
         end
         
         else begin
@@ -392,8 +452,10 @@ module Datapath(Clk, Rst, ALUOut);
             IDEX_ReadData2 <= ReadData2D;
             IDEX_MemSize <= MemSizeD;
             IDEX_branchType <= branchTypeD;
+            IDEX_Jal <= JalD;
         
             //Execute Stage to Memory Stage
+            EXMEM_PCAout <= PCAoutE;
             EXMEM_BranchAddress <= BranchAddressE;
             EXMEM_RegWrite <= RegWriteE;
             EXMEM_Branch <= BranchE;
@@ -406,13 +468,16 @@ module Datapath(Clk, Rst, ALUOut);
             EXMEM_MemToReg <= MemToRegE;
             EXMEM_MemSize <= MemSizeE;
             EXMEM_branchType <= branchTypeE;
+            EXMEM_Jal <= JalE;
         
             //Memory Stage to Write Back Stage
+            MEMWB_PCAout <= PCAoutM;
             MEMWB_RegWrite <= RegWriteM;
             MEMWB_ALU1Result <= ALU1ResultM;
             MEMWB_MemToReg <= MemToRegM;
             MEMWB_MemOut <= MemOutM;
             MEMWB_RegisterDestination <= RegisterDestinationM;
+            MEMWB_Jal <= JalM;
         
         end
  
@@ -421,7 +486,7 @@ module Datapath(Clk, Rst, ALUOut);
     
     
     ///////////for testing/////
-    assign ALUOut = ALU1ResultM;
+    assign Write_Data = WriteData1;
     
 
     

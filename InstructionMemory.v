@@ -49,9 +49,11 @@ module InstructionMemory(Address, Instruction);
     integer i;
     
     initial begin
-        for(i=0; i < 128; i = i + 1) begin
-        memory[i] = i * 3;
-        end
+        /*for(i=0; i < 128; i = i + 1) begin
+            memory[i] = i * 3;
+        end*/
+        $readmemh("instmem.mem", memory);
+
     end
     
     always@(*)begin
