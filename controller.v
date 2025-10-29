@@ -20,13 +20,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg, jump, MemSize, branchType, JorJR, Jal);
+module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch, MemWrite, MemRead, MemToReg, jump, branchType, JorJR, Jal);
     input [5:0] opcode;
     input [5:0] func;
     input [4:0] rtField;
     output reg RegWrite, RegDst, ALUSrc, Branch, MemWrite, MemRead, MemToReg, jump, branchType, JorJR, Jal;
     output reg [3:0] ALUOp;
-    output reg [1:0] MemSize;
     parameter rType = 6'b000000, addi = 6'b001000, slti = 6'b001010, lw = 6'b100011, mul = 6'b011100;
     parameter sw = 6'b101011, lh = 6'b100001, sh = 6'b101001, lb = 6'b100000, sb = 6'b101000;
     parameter andi = 6'b001100, ori = 6'b001101, xori = 6'b001110, beq = 6'b000100, bne = 6'b000101;
@@ -43,7 +42,6 @@ module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch
         MemRead <= 0;
         MemToReg   <= 0;
         jump <= 0;
-        MemSize <= 2'b00;
         branchType <= 0;
         JorJR <= 0;
         Jal <= 0;
@@ -188,7 +186,6 @@ module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch
                 Branch <= 0;
                 ALUOp <= 2'b00;
                 RegDst <= 0;
-                MemSize <= 2'b01;
             end
             
             sh: begin
@@ -200,7 +197,6 @@ module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch
                 Branch <= 0;
                 ALUOp <= 2'b00;
                 RegDst <= 0;
-                MemSize <= 2'b01;
             end
             
             lb: begin
@@ -212,7 +208,6 @@ module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch
                 Branch <= 0;
                 ALUOp <= 2'b00;
                 RegDst <= 0;
-                MemSize <= 2'b10;
             end
             
             sb: begin
@@ -224,7 +219,6 @@ module controller(opcode, func, rtField, RegWrite, RegDst, ALUSrc, ALUOp, Branch
                 Branch <= 0;
                 ALUOp <= 2'b00;
                 RegDst <= 0;
-                MemSize <= 2'b10;
             end
         
            andi: begin

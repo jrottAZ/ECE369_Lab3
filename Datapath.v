@@ -54,7 +54,6 @@ module Datapath(Clk, Rst, Write_Data);
     wire [31:0] jumpAddressD;
     wire [31:0] jumpAddress1D;
     wire jumpD;
-    wire [1:0] MemSizeD;
     wire branchTypeD;
     wire JorJRD;
     wire JalD;
@@ -80,7 +79,6 @@ module Datapath(Clk, Rst, Write_Data);
     wire [31:0] BranchAddressE;
     wire [31:0] ALU1ResultE;
     wire ALU1ZeroE;
-    wire [1:0] MemSizeE;
     wire branchTypeE;
     wire JalE;
     
@@ -101,7 +99,6 @@ module Datapath(Clk, Rst, Write_Data);
     wire [31:0] MemOutM;
     wire PCSrcM;
     wire [31:0] BranchAddressM;
-    wire [1:0] MemSizeM;
     wire JalM;
     wire [31:0] tempOut;
     
@@ -171,7 +168,6 @@ module Datapath(Clk, Rst, Write_Data);
         .MemWrite(MemWriteD), 
         .MemRead(MemReadD), 
         .MemToReg(MemToRegD),
-        .MemSize(MemSizeD),
         .jump(jumpD),
         .branchType(branchTypeD),
         .JorJR(JorJRD),
@@ -216,7 +212,6 @@ module Datapath(Clk, Rst, Write_Data);
     reg [31:0] IDEX_Offset;
     reg [31:0] IDEX_ReadData1;
     reg [31:0] IDEX_ReadData2;
-    reg [1:0] IDEX_MemSize;
     reg IDEX_branchType;
     reg IDEX_Jal;
     
@@ -238,7 +233,6 @@ module Datapath(Clk, Rst, Write_Data);
     assign OffsetE = IDEX_Offset;
     assign ReadData1E = IDEX_ReadData1;
     assign ReadData2E = IDEX_ReadData2;
-    assign MemSizeE = IDEX_MemSize;
     assign branchTypeE = IDEX_branchType;
     assign JalE = IDEX_Jal;
     
@@ -293,7 +287,6 @@ module Datapath(Clk, Rst, Write_Data);
     reg [31:0] EXMEM_ALU1Result;
     reg [4:0] EXMEM_RegisterDestination;
     reg EXMEM_MemToReg;
-    reg [1:0] EXMEM_MemSize;
     reg EXMEM_branchType;
     reg EXMEM_Jal;
     
@@ -314,7 +307,6 @@ module Datapath(Clk, Rst, Write_Data);
     assign ALU1ResultM = EXMEM_ALU1Result;
     assign RegisterDestinationM = EXMEM_RegisterDestination;
     assign MemToRegM = EXMEM_MemToReg;
-    assign MemSizeM = EXMEM_MemSize;
     assign branchTypeM = EXMEM_branchType;
     assign JalM = EXMEM_Jal;
     assign ALU1ZeroOut = tempOut[0:0];
@@ -338,7 +330,6 @@ module Datapath(Clk, Rst, Write_Data);
         .Clk(Clk), 
         .MemWrite(MemWriteM), 
         .MemRead(MemReadM),
-        .MemSize(MemSizeM), 
         .ReadData(MemOutM));
     
     //Declare registers for between stages
@@ -401,7 +392,6 @@ module Datapath(Clk, Rst, Write_Data);
             IDEX_Offset <= 0;
             IDEX_ReadData1 <= 0;
             IDEX_ReadData2 <= 0;
-            IDEX_MemSize <= 0;
             IDEX_branchType <= 0;
             IDEX_Jal <= 0;
         
@@ -417,7 +407,6 @@ module Datapath(Clk, Rst, Write_Data);
             EXMEM_ReadData2 <= 0;
             EXMEM_ALU1Zero <= 0;
             EXMEM_MemToReg <= 0;
-            EXMEM_MemSize <= 0;
             EXMEM_branchType <= 0;
             EXMEM_Jal <= 0;
         
@@ -450,7 +439,6 @@ module Datapath(Clk, Rst, Write_Data);
             IDEX_Offset <= OffsetD;
             IDEX_ReadData1 <= ReadData1D;
             IDEX_ReadData2 <= ReadData2D;
-            IDEX_MemSize <= MemSizeD;
             IDEX_branchType <= branchTypeD;
             IDEX_Jal <= JalD;
         
@@ -466,7 +454,6 @@ module Datapath(Clk, Rst, Write_Data);
             EXMEM_ReadData2 <= ReadData2E;
             EXMEM_ALU1Zero <= ALU1ZeroE;
             EXMEM_MemToReg <= MemToRegE;
-            EXMEM_MemSize <= MemSizeE;
             EXMEM_branchType <= branchTypeE;
             EXMEM_Jal <= JalE;
         
