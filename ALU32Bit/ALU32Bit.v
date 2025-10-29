@@ -30,12 +30,22 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
 
 	input [3:0] ALUControl; // control bits for ALU operation
                                 // you need to adjust the bitwidth as needed
-	input [31:0] A, B;	    // inputs
-
+	input signed [31:0] A, B;	    // inputs
+    
+    wire signed [63:0] multiplication;
+    wire signed [31:0] multOutput;
+    
 	output reg [31:0] ALUResult;	// answer
 	output Zero;	    // Zero=1 if ALUResult == 0
 
     /* Please fill in the implementation here... */
+    // here is the multiplication
+    assign multiplication = A * B;
+    assign multOutput = {multiplication[63], multiplication[30:0]};
+
+     
+    
+    
     always @(*) begin
         case (ALUControl)
             4'b0000: ALUResult <= A & B;                    //AND
@@ -50,10 +60,11 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
             4'b1010: ALUResult <= A^B;                      //XOR
             4'b1011: ALUResult <= (A >= 0) ? 32'b1 : 32'b0; //GTEZ
             4'b1100: ALUResult <= (A >= 0) ? 32'b0 : 32'b1; //LTZ
-            4'b1100: ALUResult <= (A > 0) ? 32'b1 : 32'b0;  //GTZ
-            4'b1101: ALUResult <= (A > 0) ? 32'b0 : 32'b1;  //LTEZ
+            4'b1101: ALUResult <= (A > 0) ? 32'b1 : 32'b0;  //GTZ
+            4'b1110: ALUResult <= (A > 0) ? 32'b0 : 32'b1;  //LTEZ
+            4'b1111: ALUResult <= multOutput[31:0];     //MULT
             
-            default: ALUResult <= 32'b0;                    // default safe value
+            default: ALUResult <= 32'b1;                    // default safe value
         endcase
     end
            assign Zero = (ALUResult == 0);
