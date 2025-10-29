@@ -20,10 +20,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Datapath(Clk, Rst, ALUOut);
+module Datapath(Clk, Rst, Write_Data);
 
     input Clk, Rst;
-    output [31:0] ALUOut;
+    output [31:0] Write_Data;
 
     wire ClkOut;
     
@@ -103,6 +103,7 @@ module Datapath(Clk, Rst, ALUOut);
     wire [31:0] BranchAddressM;
     wire [1:0] MemSizeM;
     wire JalM;
+    wire [31:0] tempOut;
     
     // Write Back wires
     wire [31:0] PCAoutW;
@@ -316,11 +317,12 @@ module Datapath(Clk, Rst, ALUOut);
     assign MemSizeM = EXMEM_MemSize;
     assign branchTypeM = EXMEM_branchType;
     assign JalM = EXMEM_Jal;
+    assign ALU1ZeroOut = tempOut[0:0];
     
     
     //Datapath Components for the stage
     Mux32Bit2To1 beqOrBne(
-        .out(ALU1ZeroOut), 
+        .out(tempOut), 
         .inA(ALU1ZeroM), 
         .inB(NotALU1Zero), 
         .sel(branchTypeM));
@@ -468,7 +470,7 @@ module Datapath(Clk, Rst, ALUOut);
     
     
     ///////////for testing/////
-    assign ALUOut = ALU1ResultW;
+    assign Write_Data = WriteDataW;
     
 
     

@@ -26,7 +26,7 @@
 //   operations needed to support. 
 ////////////////////////////////////////////////////////////////////////////////
 
-module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
+module ALU32Bit(ALUControl, A, B, shamt, ALUResult, Zero);
 
 	input [3:0] ALUControl; // control bits for ALU operation
                                 // you need to adjust the bitwidth as needed
@@ -39,6 +39,7 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
 	output Zero;	    // Zero=1 if ALUResult == 0
 
     /* Please fill in the implementation here... */
+    input [4:0] shamt;
     // here is the multiplication
     assign multiplication = A * B;
     assign multOutput = {multiplication[63], multiplication[30:0]};
@@ -55,23 +56,15 @@ module ALU32Bit(ALUControl, A, B, ALUResult, Zero);
             4'b0100: ALUResult <= (A < B) ? 32'b1 : 32'b0;  //SLT
             4'b0101: ALUResult <= ~(A | B);                 //NOR
             4'b0110: ALUResult <= (A > B) ? 32'b1 : 32'b0;  //SGT
-            4'b1000: ALUResult <= A << B;                   //SLL
-            4'b1001: ALUResult <= A >> B;                   //SRL
+            4'b1000: ALUResult <= A << shamt;               //SLL
+            4'b1001: ALUResult <= A >> shamt;               //SRL
             4'b1010: ALUResult <= A^B;                      //XOR
             4'b1011: ALUResult <= (A >= 0) ? 32'b1 : 32'b0; //GTEZ
             4'b1100: ALUResult <= (A >= 0) ? 32'b0 : 32'b1; //LTZ
             4'b1101: ALUResult <= (A > 0) ? 32'b1 : 32'b0;  //GTZ
             4'b1110: ALUResult <= (A > 0) ? 32'b0 : 32'b1;  //LTEZ
-<<<<<<< Updated upstream
-            4'b1111: ALUResult <= multOutput[31:0];     //MULT
-=======
-<<<<<<< HEAD
             4'b1111: ALUResult <= multOutput[31:0];         //MULT
-=======
-            4'b1111: ALUResult <= multOutput[31:0];     //MULT
->>>>>>> 4a30d16c164a3b7e33aa7a1510e7caf4f2f9a674
->>>>>>> Stashed changes
-            
+                       
             default: ALUResult <= 32'b1;                    // default safe value
         endcase
     end
